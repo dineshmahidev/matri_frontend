@@ -1,0 +1,21 @@
+Created At: 2026-06-13T17:39:47Z
+Completed At: 2026-06-13T17:39:47Z
+File Path: `file:///c:/xampp/htdocs/matri-2.0/frontend/src/routes/dashboard.messages.tsx`
+Total Lines: 13
+Total Bytes: 566
+Showing lines 1 to 13
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import { createFileRoute } from '@tanstack/react-router'
+2: 
+3: export const Route = createFileRoute('/dashboard/messages')({
+4:   component: RouteComponent,
+5: })
+6: 
+7: function RouteComponent() {
+8:   return <textarea 
+9:                     placeholder={isChatLocked ? "Waiting for their reply..." : "Message..."} 
+10:                     className={`min-h-[40px] max-h-32 w-full resize-none bg-transparent px-2 py-2.5 text-base outline-none placeholder:text-muted-foreground/60 scrollbar-hide ${isChatLocked ? "opacity-70 cursor-not-allowed" : ""}`} 
+11:                     value={text} />
+12: }
+13: 
+The above content shows the entire, complete file contents of the requested file.
