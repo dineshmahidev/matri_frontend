@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
@@ -7,7 +7,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
   plugins: [
     tsconfigPaths(),
-    tanstackStart(),
+    TanStackRouterVite(),
     react(),
     tailwindcss(),
   ],
@@ -25,7 +25,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Split heavy vendor libs into separate cacheable chunks
           if (id.includes("node_modules")) {
             if (id.includes("recharts") || id.includes("d3-")) {
               return "vendor-charts";

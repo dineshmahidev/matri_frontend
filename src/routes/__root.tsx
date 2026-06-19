@@ -5,15 +5,11 @@ import {
   createRootRouteWithContext,
   useRouter,
   HeadContent,
-  Scripts,
 } from "@tanstack/react-router";
-import { type ReactNode } from "react";
 
 import { ScrollingTicker } from "@/components/layout/ScrollingTicker";
 import { MaintenanceGuard } from "@/components/layout/MaintenanceGuard";
 import { SitePopup } from "@/components/layout/SitePopup";
-
-import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
@@ -97,10 +93,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "alternate", hrefLang: "en", href: "https://ungalkalyanam.com/" },
       { rel: "alternate", hrefLang: "ta", href: "https://ungalkalyanam.com/" },
       { rel: "alternate", hrefLang: "x-default", href: "https://ungalkalyanam.com/" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap" },
-      { rel: "stylesheet", href: appCss },
     ],
     scripts: [
       {
@@ -133,30 +125,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
   }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
-
-function RootShell({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <HeadContent />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('ungalkalyanam_theme');if(t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}var l=localStorage.getItem('ungalkalyanam_language');if(l==='ta'){document.documentElement.setAttribute('lang','ta')}}catch(e){}})();`,
-          }}
-        />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 import { AuthProvider } from "@/lib/auth";
 import { LanguageProvider } from "@/lib/language";
@@ -169,25 +141,26 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <LanguageProvider>
-          <AuthProvider>
-            <UpgradeProvider>
-              <ErrorBoundary>
-                {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-                <ScrollingTicker />
-                <MaintenanceGuard>
-                  <Outlet />
-                </MaintenanceGuard>
-                <SitePopup />
-              </ErrorBoundary>
-              <Toaster />
-            </UpgradeProvider>
-          </AuthProvider>
-        </LanguageProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <>
+      <HeadContent />
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <UpgradeProvider>
+                <ErrorBoundary>
+                  <ScrollingTicker />
+                  <MaintenanceGuard>
+                    <Outlet />
+                  </MaintenanceGuard>
+                  <SitePopup />
+                </ErrorBoundary>
+                <Toaster />
+              </UpgradeProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </>
   );
 }
-
