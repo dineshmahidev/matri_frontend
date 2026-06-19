@@ -1,12 +1,6 @@
-const getBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    return `http://${hostname}:8000/api`;
-  }
-  return 'http://localhost:8000/api';
-};
-
-const BASE_URL = getBaseUrl();
+export const BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
+  ? import.meta.env.VITE_API_URL
+  : 'https://matriback.90skalyanam.com/api';
 
 const DEFAULT_TIMEOUT = 30_000; // 30 seconds
 const MAX_RETRIES = 1;

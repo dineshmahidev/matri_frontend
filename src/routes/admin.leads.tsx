@@ -5,7 +5,7 @@ import { StatusPill } from "./admin.index";
 import { Button } from "@/components/ui/button";
 import { Loader2, Upload, Download, Check, X, Edit as EditIcon } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, BASE_URL } from "@/lib/api";
 import { toast } from "sonner";
 
 const TABS = ["All", "New", "Contacted", "Qualified", "Converted"];
@@ -90,7 +90,7 @@ function AdminLeads() {
   };
 
   const handleExport = () => {
-    const url = `http://localhost:8000/api/admin/leads/export?status=${tab}`;
+    const url = `${BASE_URL}/admin/leads/export?status=${tab}`;
     const token = localStorage.getItem("ungalkalyanam_token");
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.blob())

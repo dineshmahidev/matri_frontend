@@ -25,6 +25,12 @@ export function MaintenanceGuard({ children }: { children: ReactNode }) {
   const onAdminPath = pathname.startsWith("/admin");
   const onLoginPath = pathname === "/login";
 
+  useEffect(() => {
+    if (inMaintenance && !isAdmin && !onAdminPath && !onLoginPath && !token) {
+      navigate({ to: "/login", search: { maintenance: "1" }, replace: true });
+    }
+  }, [inMaintenance, isAdmin, onAdminPath, onLoginPath, token, navigate]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -32,12 +38,6 @@ export function MaintenanceGuard({ children }: { children: ReactNode }) {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (inMaintenance && !isAdmin && !onAdminPath && !onLoginPath && !token) {
-      navigate({ to: "/login", search: { maintenance: "1" }, replace: true });
-    }
-  }, [inMaintenance, isAdmin, onAdminPath, onLoginPath, token, navigate]);
 
   if (inMaintenance && !isAdmin && !onAdminPath) {
     if (onLoginPath) return <>{children}</>;
