@@ -68,7 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (data: any) => {
     setLoading(true);
     try {
-      const res = await api.post<any>('/auth/register', data);
+      const res = await api.post<{ token: string; user: UserType }>('/auth/register', data);
+      localStorage.setItem('ungalkalyanam_token', res.token);
+      localStorage.setItem('ungalkalyanam_user', JSON.stringify(res.user));
+      setToken(res.token);
+      setUser(res.user);
       return res;
     } catch (e) {
       throw e;

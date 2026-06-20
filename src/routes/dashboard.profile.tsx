@@ -297,7 +297,7 @@ function MyProfile() {
               </div>
               {completion < 100 && (
                 <Button asChild variant="outline" className="w-full mt-4 rounded-xl border-primary/20 text-primary hover:bg-primary/5">
-                  <Link to="/dashboard/edit-profile">
+                  <Link to="/complete-profile">
                     {language === "ta" ? "முழுமையாக்கு" : "Complete Profile"}
                   </Link>
                 </Button>
@@ -305,6 +305,94 @@ function MyProfile() {
             </div>
           );
         })()}
+
+        {/* Profile Details Section */}
+        <div className="rounded-3xl border bg-card p-6 shadow-soft">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="font-display text-xl font-semibold">{language === "ta" ? "சுயவிவர விவரங்கள்" : "Profile Details"}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">{language === "ta" ? "உங்கள் முழுமையான சுயவிவர தகவல்" : "Your complete profile information"}</p>
+            </div>
+            <Button asChild variant="outline" size="sm" className="text-xs shrink-0">
+              <Link to="/complete-profile">
+                <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                {language === "ta" ? "திருத்து" : "Edit"}
+              </Link>
+            </Button>
+          </div>
+
+          {[
+            {
+              title: language === "ta" ? "அடிப்படை தகவல்" : "Basic Info",
+              items: [
+                { label: language === "ta" ? "பெயர்" : "Name", value: profile.name },
+                { label: language === "ta" ? "பிறந்த தேதி" : "DOB", value: profile.dob },
+                { label: language === "ta" ? "பிறந்த நேரம்" : "TOB", value: profile.tob },
+                { label: language === "ta" ? "திருமண நிலை" : "Marital Status", value: profile.maritalStatus },
+                { label: "Height", value: profile.height },
+                { label: language === "ta" ? "இரத்த குழு" : "Blood Group", value: profile.blood_group },
+              ],
+            },
+            {
+              title: language === "ta" ? "மதம் & சமூகம்" : "Religion & Community",
+              items: [
+                { label: language === "ta" ? "மதம்" : "Religion", value: profile.religion },
+                { label: language === "ta" ? "சமூகம்" : "Community", value: profile.community },
+                { label: language === "ta" ? "தாய்மொழி" : "Mother Tongue", value: profile.motherTongue },
+              ],
+            },
+            {
+              title: language === "ta" ? "ஜாதகம்" : "Horoscope",
+              items: [
+                { label: "Rasi", value: profile.rasi },
+                { label: "Nakshatram", value: profile.nakshatram },
+              ],
+            },
+            {
+              title: language === "ta" ? "இருப்பிடம்" : "Location",
+              items: [
+                { label: language === "ta" ? "மாநிலம்" : "State", value: profile.state },
+                { label: language === "ta" ? "நகரம்" : "City", value: profile.city },
+              ],
+            },
+            {
+              title: language === "ta" ? "கல்வி & பணி" : "Education & Career",
+              items: [
+                { label: language === "ta" ? "கல்வி" : "Education", value: profile.education },
+                { label: language === "ta" ? "தொழில்" : "Profession", value: profile.profession },
+                { label: language === "ta" ? "வருமானம்" : "Income", value: profile.income },
+              ],
+            },
+            {
+              title: language === "ta" ? "குடும்பம்" : "Family",
+              items: [
+                { label: language === "ta" ? "தந்தை" : "Father", value: profile.family?.father },
+                { label: language === "ta" ? "தாய்" : "Mother", value: profile.family?.mother },
+                { label: language === "ta" ? "உடன்பிறந்தோர்" : "Siblings", value: profile.family?.siblings },
+                { label: language === "ta" ? "குடும்ப நிலை" : "Family Status", value: profile.family?.familyStatus },
+              ],
+            },
+          ].map(section => {
+            const hasValue = section.items.some(i => i.value);
+            if (!hasValue) return null;
+            return (
+              <div key={section.title} className="mb-5 last:mb-0">
+                <h4 className="text-sm font-semibold text-primary mb-2 flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  {section.title}
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {section.items.filter(i => i.value).map(i => (
+                    <div key={i.label} className="rounded-xl bg-muted/40 px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{i.label}</p>
+                      <p className="text-sm font-medium truncate">{i.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         {/* Gallery Section */}
         <div className="rounded-3xl border bg-card p-6 shadow-soft">

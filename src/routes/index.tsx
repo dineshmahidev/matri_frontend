@@ -9,9 +9,12 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { ProfileCard } from "@/components/matrimony/ProfileCard";
+import { ProfileCompletionDialog } from "@/components/matrimony/ProfileCompletionDialog";
 import { useLanguage } from "@/lib/language";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,6 +33,26 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const { user } = useAuth();
+  const { language } = useLanguage();
+  const [showProfilePopup, setShowProfilePopup] = useState(false);
+
+  const { data: profileData } = useQuery<any>({
+    queryKey: ["home-profile-check"],
+    queryFn: () => api.get("/dashboard"),
+    enabled: !!user,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (!profileData || !user) return;
+    const dismissed = sessionStorage.getItem("ungalkalyanam_profile_popup_dismissed");
+    const incomplete = profileData.user?.profile_complete === false || (profileData.user?.profile_completion ?? 0) < 100;
+    if (!dismissed && incomplete) {
+      setShowProfilePopup(true);
+    }
+  }, [profileData, user]);
+
   const { data: featuredData, isLoading: loadingFeatured } = useQuery<{ data: any[] }>({
     queryKey: ["featured-members-home"],
     queryFn: () => api.get<{ data: any[] }>("/members/featured?has_photo=1"),
@@ -38,7 +61,7 @@ function Home() {
 
   const { data: fallbackData, isLoading: loadingFallback } = useQuery<{ data: any[] }>({
     queryKey: ["recently-joined-members-home"],
-    queryFn: () => api.get<{ data: any[] }>("/members/recently-joined?has_photo=1"),
+    queryFn: () => api.get<{ data: any[] }>("/members/recently-joined"),
     enabled: featuredMembers.length === 0,
   });
   const fallbackMembers = fallbackData?.data || [];
@@ -60,6 +83,18 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      {user && (
+        <ProfileCompletionDialog
+          open={showProfilePopup}
+          onOpenChange={setShowProfilePopup}
+          completionPercent={profileData?.user?.profile_completion ?? 0}
+          missingFields={profileData?.user?.missing_fields ?? []}
+          language={language}
+          isPremium={profileData?.user?.is_premium}
+          currentPhoto={profileData?.user?.photo}
+          gallery={profileData?.user?.gallery}
+        />
+      )}
       <Navbar />
       <Hero />
       <Trust />
@@ -104,7 +139,12 @@ function Hero() {
       }}
     >
       {/* Dark mode override */}
-      <style>{`.dark section.hero-section { background: linear-gradient(145deg, #0D0404 0%, #150608 30%, #0D0409 70%, #0D0404 100%) !important; }`}</style>
+      <style>{`
+        .dark section.hero-section { background: linear-gradient(145deg, #0D0404 0%, #150608 30%, #0D0409 70%, #0D0404 100%) !important; }
+        .dark .hero-search-card { background: rgba(13,4,4,0.85) !important; border-color: rgba(212,175,55,0.15) !important; }
+        .dark .hero-search-card select { background-color: #1A0808 !important; color: #FFF8E7 !important; border-color: rgba(212,175,55,0.2) !important; }
+        .dark .hero-search-card select option { background-color: #1A0808 !important; color: #FFF8E7 !important; }
+      `}</style>
 
       {/* Large blurred heart shape background behind couple */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
@@ -252,7 +292,7 @@ function Hero() {
                   }}
                 >
                   <Sparkles className="h-4 w-4" />
-                  {isTamil ? "இலவசமாக சேரவும்" : "Join Free Today"}
+                  {isTamil ? "இலவசமாக பதிவு செய்க" : "Register Free Today"}
                 </Link>
               </motion.div>
             </div>
@@ -351,7 +391,7 @@ function Hero() {
 
         {/* SEARCH BAR — Bottom of hero */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-          className="w-full max-w-3xl mx-auto rounded-2xl p-3"
+          className="w-full max-w-3xl mx-auto rounded-2xl p-3 hero-search-card"
           style={{
             background: "rgba(255,255,255,0.85)",
             backdropFilter: "blur(12px)",
@@ -360,17 +400,17 @@ function Hero() {
           }}
         >
           <form className="grid grid-cols-2 md:grid-cols-4 gap-2" onSubmit={(e) => e.preventDefault()}>
-            <select className="h-11 rounded-xl border border-[rgba(232,63,123,0.15)] bg-white px-3 text-sm focus:outline-none text-foreground">
+            <select className="h-11 rounded-xl border border-[rgba(232,63,123,0.15)] bg-white px-3 text-sm focus:outline-none text-foreground dark:bg-[#1A0808] dark:text-[#FFF8E7] dark:border-[rgba(212,175,55,0.2)]">
               <option>{t("lookingFor")}</option>
               <option>{t("bride")}</option>
               <option>{t("groom")}</option>
             </select>
-            <select className="h-11 rounded-xl border border-[rgba(232,63,123,0.15)] bg-white px-3 text-sm focus:outline-none text-foreground">
+            <select className="h-11 rounded-xl border border-[rgba(232,63,123,0.15)] bg-white px-3 text-sm focus:outline-none text-foreground dark:bg-[#1A0808] dark:text-[#FFF8E7] dark:border-[rgba(212,175,55,0.2)]">
               <option>{isTamil ? "வயது 24 - 30" : "Age 24 – 30"}</option>
               <option>{isTamil ? "வயது 30 - 35" : "Age 30 – 35"}</option>
               <option>{isTamil ? "வயது 35 - 45" : "Age 35 – 45"}</option>
             </select>
-            <select className="h-11 rounded-xl border border-[rgba(232,63,123,0.15)] bg-white px-3 text-sm focus:outline-none text-foreground">
+            <select className="h-11 rounded-xl border border-[rgba(232,63,123,0.15)] bg-white px-3 text-sm focus:outline-none text-foreground dark:bg-[#1A0808] dark:text-[#FFF8E7] dark:border-[rgba(212,175,55,0.2)]">
               <option>{isTamil ? "மதம்" : "Religion"}</option>
               <option>Hindu</option>
               <option>Muslim</option>

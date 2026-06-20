@@ -58,6 +58,7 @@ const [submitting, setSubmitting] = useState(false);
         name,
         email,
         password,
+        password_confirmation: confirmPassword,
         phone,
         gender: gender.toLowerCase(),
         dob,
@@ -69,12 +70,11 @@ const [submitting, setSubmitting] = useState(false);
         nakshatram,
       });
 
-      sessionStorage.setItem("ungalkalyanam_reg_user_id", res.user_id.toString());
-      sessionStorage.setItem("ungalkalyanam_reg_otp", res.otp);
-      sessionStorage.setItem("ungalkalyanam_reg_phone", phone);
-
-      toast.success(language === "ta" ? `சுயவிவரம் உருவாக்கப்பட்டது! சோதனை OTP: ${res.otp}` : `Profile created! Use test OTP: ${res.otp}`);
-      navigate({ to: "/otp" });
+      toast.success(language === "ta" ? "சுயவிவரம் வெற்றிகரமாக உருவாக்கப்பட்டது!" : "Profile created successfully!", {
+        description: language === "ta" ? "உங்கள் சுயவிவரத்தை முழுமைப்படுத்த தொடரவும்." : "Please complete your profile to get started.",
+        duration: 5000,
+      });
+      navigate({ to: "/" });
     } catch (err: any) {
       toast.error(err.message || (language === "ta" ? "பதிவு செய்ய முடியவில்லை. மீண்டும் முயற்சிக்கவும்." : "Registration failed. Please try again."));
     } finally {

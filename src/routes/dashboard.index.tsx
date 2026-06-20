@@ -26,6 +26,8 @@ type DashboardDataType = {
     membership_valid_until: string | null;
     credits: number;
     photo?: string | null;
+    gallery?: string[];
+    is_premium?: boolean;
   };
   stats: {
     profile_views: string;
@@ -100,6 +102,9 @@ function Dashboard() {
         completionPercent={completion}
         missingFields={user.missing_fields ?? []}
         language={language}
+        isPremium={user.is_premium}
+        currentPhoto={user.photo}
+        gallery={user.gallery}
       />
 
       <div className="space-y-6 text-left animate-fade-in">

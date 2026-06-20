@@ -12,7 +12,21 @@ import { api } from "@/lib/api";
 import { useLanguage } from "@/lib/language";
 import { RELIGIONS, CASTES, MOTHER_TONGUES, RELIGION_CASTE_MAP, OPTION_TRANSLATIONS } from "@/data/castes";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import notFoundGif from "../../dad9a054-116e-11ee-aef8-9bf427a69ce4.gif";
+function NotFoundIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="80" r="35" fill="#FCE4EC" />
+      <circle cx="100" cy="80" r="35" stroke="#E83F7B" strokeWidth="2" fill="none" />
+      <circle cx="87" cy="73" r="4" fill="#E83F7B" opacity="0.6" />
+      <circle cx="113" cy="73" r="4" fill="#E83F7B" opacity="0.6" />
+      <path d="M88 92 Q100 102 112 92" stroke="#E83F7B" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      <path d="M128 128 L175 175" stroke="#E83F7B" strokeWidth="3" strokeLinecap="round" strokeDasharray="8 4" />
+      <circle cx="125" cy="125" r="18" fill="#FFF0F3" />
+      <circle cx="125" cy="125" r="18" stroke="#E83F7B" strokeWidth="2" fill="none" />
+      <path d="M125 118 v14 M118 125 h14" stroke="#E83F7B" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export const Route = createFileRoute("/browse")({
   head: () => ({ meta: [{ title: "Browse Profiles — Ungalkalyanam" }] }),
@@ -254,8 +268,8 @@ function Browse() {
                       filteredMembers.map((m: any, i: number) => <ProfileCard key={m.id} m={m} index={i} />)
                     ) : (
                       <div className="col-span-full py-20 flex flex-col items-center justify-center text-center">
-                        <div className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 max-w-full mb-4 flex items-center justify-center">
-                          <img src={notFoundGif} alt="Not found" className="w-full h-full object-contain" />
+                        <div className="mb-4">
+                          <NotFoundIcon className="w-48 h-48 mx-auto" />
                         </div>
                         <h3 className="font-display text-lg font-semibold mb-1">
                           {language === "ta" ? "சுயவிவரங்கள் காணப்படவில்லை" : "No profiles found"}
@@ -329,8 +343,8 @@ function Browse() {
                     filteredMembers.map((m: any, i: number) => <ProfileCard key={m.id} m={m} index={i} />)
                   ) : (
                     <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                      <div className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 max-w-full mb-4 flex items-center justify-center">
-                        <img src={notFoundGif} alt="Not found" className="w-full h-full object-contain" />
+                      <div className="mb-4">
+                        <NotFoundIcon className="w-48 h-48 mx-auto" />
                       </div>
                       <h3 className="font-display text-lg font-semibold mb-1">
                         {language === "ta" ? "பரிந்துரைக்கப்பட்ட சுயவிவரங்கள் இல்லை" : "No recommended profiles"}
@@ -393,8 +407,8 @@ function Browse() {
                     filteredMembers.map((m: any, i: number) => <ProfileCard key={m.id} m={m} index={i} />)
                   ) : (
                     <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                      <div className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 max-w-full mb-4 flex items-center justify-center">
-                        <img src={notFoundGif} alt="Not found" className="w-full h-full object-contain" />
+                      <div className="mb-4">
+                        <NotFoundIcon className="w-48 h-48 mx-auto" />
                       </div>
                       <h3 className="font-display text-lg font-semibold mb-1">
                         {language === "ta" ? "சேமிக்கப்பட்ட சுயவிவரங்கள் இல்லை" : "No saved profiles"}
@@ -423,8 +437,8 @@ function Browse() {
                     members.map((m: any, i: number) => <ProfileCard key={m.id} m={m} index={i} />)
                   ) : (
                     <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                      <div className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 max-w-full mb-4 flex items-center justify-center">
-                        <img src={notFoundGif} alt="Not found" className="w-full h-full object-contain" />
+                      <div className="mb-4">
+                        <NotFoundIcon className="w-48 h-48 mx-auto" />
                       </div>
                       <h3 className="font-display text-lg font-semibold mb-1">
                         {language === "ta" ? "புதிய இணைப்புகள் இல்லை" : "No recent joins"}

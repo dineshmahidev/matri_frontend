@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { DashboardLayout } from "@/components/layout/AppLayouts";
 import {
-  HelpCircle, MessageSquare, TicketCheck, ChevronLeft, Phone, Mail,
-  ChevronDown, ChevronUp, Send, Loader2, CheckCircle2
+  HelpCircle, ChevronLeft, Phone, Mail, TicketCheck,
+  ChevronDown, ChevronUp, Send, Loader2
 } from "lucide-react";
 import { useLanguage } from "@/lib/language";
 import { useState } from "react";
@@ -47,6 +47,7 @@ function FaqItem({ faq, isTamil }: { faq: { question: string; question_ta: strin
 function HelpSupport() {
   const { language } = useLanguage();
   const isTamil = language === "ta";
+  const navigate = useNavigate();
 
   const { data: settings } = useQuery({
     queryKey: ["site-settings"],
@@ -63,7 +64,6 @@ function HelpSupport() {
   const [category, setCategory] = useState("general");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,8 +74,8 @@ function HelpSupport() {
     setSubmitting(true);
     try {
       await api.post("/support-tickets", { category, subject, message });
-      setSubmitted(true);
       toast.success(isTamil ? "கோரிக்கை வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது!" : "Support ticket submitted successfully!");
+      navigate({ to: "/dashboard/support-tickets" });
     } catch {
       toast.error(isTamil ? "சமர்ப்பிக்க தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்." : "Failed to submit. Please try again.");
     } finally {
@@ -88,14 +88,19 @@ function HelpSupport() {
       <div className="max-w-2xl mx-auto space-y-6 pb-10 animate-fade-in">
 
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Link to="/dashboard/profile" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted hover:bg-muted/80 transition-colors">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h1 className="font-display text-xl font-bold">{isTamil ? "உதவி & ஆதரவு" : "Help & Support"}</h1>
-            <p className="text-xs text-muted-foreground">{isTamil ? "எங்களுக்கு உங்கள் கவலைகளை தெரிவிக்கவும்" : "We're here to help you"}</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/dashboard/profile" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted hover:bg-muted/80 transition-colors">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div>
+              <h1 className="font-display text-xl font-bold">{isTamil ? "உதவி & ஆதரவு" : "Help & Support"}</h1>
+              <p className="text-xs text-muted-foreground">{isTamil ? "எங்களுக்கு உங்கள் கவலைகளை தெரிவிக்கவும்" : "We're here to help you"}</p>
+            </div>
           </div>
+          <Link to="/dashboard/support-tickets" className="rounded-xl border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-muted/40">
+            {isTamil ? "எனது கோரிக்கைகள்" : "My Tickets"}
+          </Link>
         </div>
 
         {/* Contact Quick Links */}
@@ -139,19 +144,7 @@ function HelpSupport() {
             </div>
           </div>
 
-          {submitted ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
-              <div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-              </div>
-              <h3 className="font-display font-bold text-lg">{isTamil ? "கோரிக்கை சமர்ப்பிக்கப்பட்டது!" : "Ticket Submitted!"}</h3>
-              <p className="text-sm text-muted-foreground max-w-xs">{isTamil ? "எங்கள் குழு 24 மணி நேரத்தில் உங்களை தொடர்பு கொள்ளும்." : "Our support team will get back to you within 24 hours."}</p>
-              <button onClick={() => { setSubmitted(false); setSubject(""); setMessage(""); setCategory("general"); }} className="mt-2 text-sm text-primary underline underline-offset-4 cursor-pointer">
-                {isTamil ? "மற்றொரு கோரிக்கை சமர்ப்பிக்கவும்" : "Submit Another Ticket"}
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
                   {isTamil ? "வகை" : "Category"}
@@ -208,7 +201,6 @@ function HelpSupport() {
                 )}
               </button>
             </form>
-          )}
         </motion.div>
       </div>
     </DashboardLayout>

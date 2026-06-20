@@ -9,6 +9,7 @@ import { Loader2, ArrowLeft, Mail, Phone, KeyRound, Lock } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/language";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({ meta: [{ title: "Forgot Password — Ungalkalyanam" }] }),
@@ -17,6 +18,8 @@ export const Route = createFileRoute("/forgot-password")({
 
 function ForgotPassword() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const isTa = language === "ta";
   const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -121,6 +124,10 @@ function ForgotPassword() {
                 </Button>
                 <p className="text-center text-sm text-muted-foreground">
                   <Link to="/login" className="text-primary hover:underline">Back to login</Link>
+                </p>
+                <p className="text-center text-sm text-muted-foreground">
+                  {isTa ? "கணக்கு இல்லையா?" : "Don't have an account?"}{" "}
+                  <Link to="/register" className="font-semibold text-primary hover:underline">{isTa ? "பதிவு செய்க" : "Register"}</Link>
                 </p>
               </form>
             </>
