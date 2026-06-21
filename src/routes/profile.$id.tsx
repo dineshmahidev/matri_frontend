@@ -10,7 +10,7 @@ import {
   X, ChevronRight, Maximize2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -103,9 +103,9 @@ function Profile() {
       setAutoChecked(true);
       handleCheckMatch();
     }
-  }, [myProfile, m, hasMyRasi, hasTargetRasi, handleCheckMatch]);
+  });
 
-  const handleCheckMatch = async () => {
+  const handleCheckMatch = useCallback(async () => {
     if (!hasMyRasi) {
       openPremiumPrompt(
         "Add Your Horoscope",
@@ -136,7 +136,7 @@ function Profile() {
         toast.error(err.message || "Failed to check match compatibility.");
       }
     }
-  };
+  }, [hasMyRasi, hasTargetRasi, language, openPremiumPrompt, id]);
 
   const handleUnlockProfile = async () => {
     setIsUnlocking(true);
