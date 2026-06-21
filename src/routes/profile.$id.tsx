@@ -67,7 +67,6 @@ function Profile() {
   const [saved, setSaved] = useState(m.isSaved || false);
   const [activePhoto, setActivePhoto] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [autoChecked, setAutoChecked] = useState(false);
 
   useEffect(() => { setInterestSent(m.interestSent || false); }, [m.interestSent]);
   useEffect(() => { setSaved(m.isSaved || false); }, [m.isSaved]);
@@ -88,6 +87,14 @@ function Profile() {
   });
   const myProfile = myProfileRes?.data;
   const myIsPremium = myProfile?.premium ?? false;
+
+  const { data: settingsData } = useQuery<any>({
+    queryKey: ["site-settings"],
+    queryFn: () => api.get<any>("/settings"),
+    staleTime: 60000,
+  });
+  const unlockCost = parseInt(settingsData?.credit_cost_unlock || "5", 10);
+  const interestCost = parseInt(settingsData?.credit_cost_interest || "1", 10);
   const hasMyRasi = myProfile?.rasi && myProfile?.nakshatram;
   const hasTargetRasi = m.rasi && m.nakshatram;
 
@@ -95,14 +102,6 @@ function Profile() {
     queryKey: ["porutham-match", id],
     queryFn: () => api.get<any>(`/members/${id}/match`),
     enabled: false,
-  });
-
-  // Auto-open AI Porutham popup when both profiles have horoscope data
-  useEffect(() => {
-    if (!autoChecked && hasMyRasi && hasTargetRasi && myProfile && m) {
-      setAutoChecked(true);
-      handleCheckMatch();
-    }
   });
 
   const handleCheckMatch = useCallback(async () => {
@@ -817,14 +816,14 @@ function Profile() {
                     <span className="text-xs text-rose-600 font-medium">
                       {isTamil ? "கழிக்கப்படும்:" : "Deducted:"}
                     </span>
-                    <span className="text-sm font-bold text-rose-600">-5</span>
+                    <span className="text-sm font-bold text-rose-600">-{unlockCost}</span>
                   </div>
                   <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
                     <span className="text-xs text-emerald-600 font-medium">
                       {isTamil ? "மீதமிருக்கும்:" : "Remaining:"}
                     </span>
                     <span className="text-sm font-bold text-emerald-600">
-                      {Math.max(0, (myProfile?.planCredits || myProfile?.credits || 0) - 5)}
+                      {Math.max(0, (myProfile?.planCredits || myProfile?.credits || 0) - unlockCost)}
                     </span>
                   </div>
                 </div>
@@ -839,7 +838,7 @@ function Profile() {
                   </Button>
                   <Button 
                     onClick={handleUnlockProfile}
-                    disabled={isUnlocking || ((myProfile?.planCredits || myProfile?.credits || 0) < 5)}
+                    disabled={isUnlocking || ((myProfile?.planCredits || myProfile?.credits || 0) < unlockCost)}
                     className="flex-1 rounded-xl gradient-gold text-amber-950 font-bold cursor-pointer"
                   >
                     {isUnlocking ? (
