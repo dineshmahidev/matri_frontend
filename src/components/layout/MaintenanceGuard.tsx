@@ -22,7 +22,7 @@ export function MaintenanceGuard({ children }: { children: ReactNode }) {
     const user = userRaw ? JSON.parse(userRaw) : null;
     isAdmin = user?.role === "admin";
   } catch {}
-  const onAdminPath = pathname.startsWith("/admin");
+  const onAdminPath = pathname.startsWith("/uk-control");
   const onLoginPath = pathname === "/login";
 
   useEffect(() => {

@@ -10,7 +10,7 @@ import { api } from "@/lib/api";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/admin/edit-profile")({
+export const Route = createFileRoute("/uk-control/edit-profile")({
   head: () => ({ meta: [{ title: "Edit Profile — Admin — Ungalkalyanam" }] }),
   component: AdminEditProfile,
 });

@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/layout/AppLayouts";
-import { StatusPill } from "./admin.index";
+import { StatusPill } from "./uk-control.index";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Loader2, Phone, Calendar, Clock, UserCheck, Mail,
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/admin/staff/$id")({
+export const Route = createFileRoute("/uk-control/staff/$id")({
   head: () => ({ meta: [{ title: "Staff Detail — Admin" }] }),
   component: AdminStaffDetail,
 });
@@ -98,7 +98,7 @@ function AdminStaffDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-staff"] });
       toast.success("Staff member deleted successfully");
-      navigate({ to: "/admin/staff" });
+      navigate({ to: "/uk-control/staff" });
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete staff");
@@ -220,7 +220,7 @@ function AdminStaffDetail() {
 
       <div className="space-y-6 no-print">
         <div className="flex flex-wrap items-center gap-3">
-          <Link to="/admin/staff" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
+          <Link to="/uk-control/staff" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
             <ArrowLeft className="h-4 w-4" /> Back to staff
           </Link>
         </div>

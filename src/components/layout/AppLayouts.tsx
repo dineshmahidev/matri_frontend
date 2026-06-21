@@ -194,16 +194,16 @@ export function AdminLayout({ children, role = "Admin" }: { children: ReactNode;
   });
 
   const ADMIN = [
-    { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { to: "/admin/users", label: "Users", icon: User },
-    { to: "/admin/leads", label: "Leads", icon: Inbox },
-    { to: "/admin/staff", label: "Staff", icon: User },
-    { to: "/admin/payments", label: "Payments", icon: CreditCard },
-    { to: "/admin/reports", label: "Reports", icon: LayoutDashboard },
-    { to: "/admin/cms", label: "CMS", icon: Bookmark },
-    { to: "/admin/support-tickets", label: "Support Tickets", icon: MessageSquare },
-    { to: "/admin/bulk-upload", label: "Bulk Upload", icon: Upload },
-    { to: "/admin/edit-profile", label: "Edit Profile", icon: User },
+    { to: "/uk-control", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { to: "/uk-control/users", label: "Users", icon: User },
+    { to: "/uk-control/leads", label: "Leads", icon: Inbox },
+    { to: "/uk-control/staff", label: "Staff", icon: User },
+    { to: "/uk-control/payments", label: "Payments", icon: CreditCard },
+    { to: "/uk-control/reports", label: "Reports", icon: LayoutDashboard },
+    { to: "/uk-control/cms", label: "CMS", icon: Bookmark },
+    { to: "/uk-control/support-tickets", label: "Support Tickets", icon: MessageSquare },
+    { to: "/uk-control/bulk-upload", label: "Bulk Upload", icon: Upload },
+    { to: "/uk-control/edit-profile", label: "Edit Profile", icon: User },
   ];
   const STAFF = [
     { to: "/staff", label: "Dashboard", icon: LayoutDashboard, exact: true },

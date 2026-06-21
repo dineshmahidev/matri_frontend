@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UkControlRouteImport } from './routes/uk-control'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SuccessStoriesRouteImport } from './routes/success-stories'
 import { Route as StaffRouteImport } from './routes/staff'
@@ -29,13 +30,21 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CompleteProfileRouteImport } from './routes/complete-profile'
 import { Route as BrowseRouteImport } from './routes/browse'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UkControlIndexRouteImport } from './routes/uk-control.index'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as UkControlUsersRouteImport } from './routes/uk-control.users'
+import { Route as UkControlSupportTicketsRouteImport } from './routes/uk-control.support-tickets'
+import { Route as UkControlStaffRouteImport } from './routes/uk-control.staff'
+import { Route as UkControlReportsRouteImport } from './routes/uk-control.reports'
+import { Route as UkControlPaymentsRouteImport } from './routes/uk-control.payments'
+import { Route as UkControlLeadsRouteImport } from './routes/uk-control.leads'
+import { Route as UkControlEditProfileRouteImport } from './routes/uk-control.edit-profile'
+import { Route as UkControlCmsRouteImport } from './routes/uk-control.cms'
+import { Route as UkControlBulkUploadRouteImport } from './routes/uk-control.bulk-upload'
 import { Route as StaffUsersRouteImport } from './routes/staff.users'
 import { Route as StaffNotesRouteImport } from './routes/staff.notes'
 import { Route as StaffLeadsRouteImport } from './routes/staff.leads'
@@ -52,20 +61,16 @@ import { Route as DashboardNotificationsRouteImport } from './routes/dashboard.n
 import { Route as DashboardMessagesRouteImport } from './routes/dashboard.messages'
 import { Route as DashboardEditProfileRouteImport } from './routes/dashboard.edit-profile'
 import { Route as BlogSlugRouteImport } from './routes/blog_.$slug'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminSupportTicketsRouteImport } from './routes/admin.support-tickets'
-import { Route as AdminStaffRouteImport } from './routes/admin.staff'
-import { Route as AdminReportsRouteImport } from './routes/admin.reports'
-import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
-import { Route as AdminLeadsRouteImport } from './routes/admin.leads'
-import { Route as AdminEditProfileRouteImport } from './routes/admin.edit-profile'
-import { Route as AdminCmsRouteImport } from './routes/admin.cms'
-import { Route as AdminBulkUploadRouteImport } from './routes/admin.bulk-upload'
+import { Route as UkControlStaffIdRouteImport } from './routes/uk-control.staff.$id'
 import { Route as StaffLeadIdRouteImport } from './routes/staff.lead.$id'
 import { Route as ProfileIdPoruthamRouteImport } from './routes/profile.$id.porutham'
 import { Route as DashboardSupportTicketsIdRouteImport } from './routes/dashboard.support-tickets.$id'
-import { Route as AdminStaffIdRouteImport } from './routes/admin.staff.$id'
 
+const UkControlRoute = UkControlRouteImport.update({
+  id: '/uk-control',
+  path: '/uk-control',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -166,11 +171,6 @@ const BrowseRoute = BrowseRouteImport.update({
   path: '/browse',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -180,6 +180,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const UkControlIndexRoute = UkControlIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => UkControlRoute,
 } as any)
 const StaffIndexRoute = StaffIndexRouteImport.update({
   id: '/',
@@ -196,10 +201,50 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   path: '/blog/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
+const UkControlUsersRoute = UkControlUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => UkControlRoute,
+} as any)
+const UkControlSupportTicketsRoute = UkControlSupportTicketsRouteImport.update({
+  id: '/support-tickets',
+  path: '/support-tickets',
+  getParentRoute: () => UkControlRoute,
+} as any)
+const UkControlStaffRoute = UkControlStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => UkControlRoute,
+} as any)
+const UkControlReportsRoute = UkControlReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => UkControlRoute,
+} as any)
+const UkControlPaymentsRoute = UkControlPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => UkControlRoute,
+} as any)
+const UkControlLeadsRoute = UkControlLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => UkControlRoute,
+} as any)
+const UkControlEditProfileRoute = UkControlEditProfileRouteImport.update({
+  id: '/edit-profile',
+  path: '/edit-profile',
+  getParentRoute: () => UkControlRoute,
+} as any)
+const UkControlCmsRoute = UkControlCmsRouteImport.update({
+  id: '/cms',
+  path: '/cms',
+  getParentRoute: () => UkControlRoute,
+} as any)
+const UkControlBulkUploadRoute = UkControlBulkUploadRouteImport.update({
+  id: '/bulk-upload',
+  path: '/bulk-upload',
+  getParentRoute: () => UkControlRoute,
 } as any)
 const StaffUsersRoute = StaffUsersRouteImport.update({
   id: '/users',
@@ -281,50 +326,10 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSupportTicketsRoute = AdminSupportTicketsRouteImport.update({
-  id: '/support-tickets',
-  path: '/support-tickets',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminStaffRoute = AdminStaffRouteImport.update({
-  id: '/staff',
-  path: '/staff',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminReportsRoute = AdminReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
-  id: '/payments',
-  path: '/payments',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLeadsRoute = AdminLeadsRouteImport.update({
-  id: '/leads',
-  path: '/leads',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminEditProfileRoute = AdminEditProfileRouteImport.update({
-  id: '/edit-profile',
-  path: '/edit-profile',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCmsRoute = AdminCmsRouteImport.update({
-  id: '/cms',
-  path: '/cms',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBulkUploadRoute = AdminBulkUploadRouteImport.update({
-  id: '/bulk-upload',
-  path: '/bulk-upload',
-  getParentRoute: () => AdminRoute,
+const UkControlStaffIdRoute = UkControlStaffIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => UkControlStaffRoute,
 } as any)
 const StaffLeadIdRoute = StaffLeadIdRouteImport.update({
   id: '/lead/$id',
@@ -342,16 +347,10 @@ const DashboardSupportTicketsIdRoute =
     path: '/$id',
     getParentRoute: () => DashboardSupportTicketsRoute,
   } as any)
-const AdminStaffIdRoute = AdminStaffIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AdminStaffRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/admin': typeof AdminRouteWithChildren
   '/browse': typeof BrowseRoute
   '/complete-profile': typeof CompleteProfileRoute
   '/contact': typeof ContactRoute
@@ -372,15 +371,7 @@ export interface FileRoutesByFullPath {
   '/staff': typeof StaffRouteWithChildren
   '/success-stories': typeof SuccessStoriesRoute
   '/terms': typeof TermsRoute
-  '/admin/bulk-upload': typeof AdminBulkUploadRoute
-  '/admin/cms': typeof AdminCmsRoute
-  '/admin/edit-profile': typeof AdminEditProfileRoute
-  '/admin/leads': typeof AdminLeadsRoute
-  '/admin/payments': typeof AdminPaymentsRoute
-  '/admin/reports': typeof AdminReportsRoute
-  '/admin/staff': typeof AdminStaffRouteWithChildren
-  '/admin/support-tickets': typeof AdminSupportTicketsRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/uk-control': typeof UkControlRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
   '/dashboard/edit-profile': typeof DashboardEditProfileRoute
   '/dashboard/messages': typeof DashboardMessagesRoute
@@ -397,14 +388,23 @@ export interface FileRoutesByFullPath {
   '/staff/leads': typeof StaffLeadsRoute
   '/staff/notes': typeof StaffNotesRoute
   '/staff/users': typeof StaffUsersRoute
-  '/admin/': typeof AdminIndexRoute
+  '/uk-control/bulk-upload': typeof UkControlBulkUploadRoute
+  '/uk-control/cms': typeof UkControlCmsRoute
+  '/uk-control/edit-profile': typeof UkControlEditProfileRoute
+  '/uk-control/leads': typeof UkControlLeadsRoute
+  '/uk-control/payments': typeof UkControlPaymentsRoute
+  '/uk-control/reports': typeof UkControlReportsRoute
+  '/uk-control/staff': typeof UkControlStaffRouteWithChildren
+  '/uk-control/support-tickets': typeof UkControlSupportTicketsRoute
+  '/uk-control/users': typeof UkControlUsersRoute
   '/blog/': typeof BlogIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/staff/': typeof StaffIndexRoute
-  '/admin/staff/$id': typeof AdminStaffIdRoute
+  '/uk-control/': typeof UkControlIndexRoute
   '/dashboard/support-tickets/$id': typeof DashboardSupportTicketsIdRoute
   '/profile/$id/porutham': typeof ProfileIdPoruthamRoute
   '/staff/lead/$id': typeof StaffLeadIdRoute
+  '/uk-control/staff/$id': typeof UkControlStaffIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -427,15 +427,6 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/success-stories': typeof SuccessStoriesRoute
   '/terms': typeof TermsRoute
-  '/admin/bulk-upload': typeof AdminBulkUploadRoute
-  '/admin/cms': typeof AdminCmsRoute
-  '/admin/edit-profile': typeof AdminEditProfileRoute
-  '/admin/leads': typeof AdminLeadsRoute
-  '/admin/payments': typeof AdminPaymentsRoute
-  '/admin/reports': typeof AdminReportsRoute
-  '/admin/staff': typeof AdminStaffRouteWithChildren
-  '/admin/support-tickets': typeof AdminSupportTicketsRoute
-  '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/dashboard/edit-profile': typeof DashboardEditProfileRoute
   '/dashboard/messages': typeof DashboardMessagesRoute
@@ -452,20 +443,28 @@ export interface FileRoutesByTo {
   '/staff/leads': typeof StaffLeadsRoute
   '/staff/notes': typeof StaffNotesRoute
   '/staff/users': typeof StaffUsersRoute
-  '/admin': typeof AdminIndexRoute
+  '/uk-control/bulk-upload': typeof UkControlBulkUploadRoute
+  '/uk-control/cms': typeof UkControlCmsRoute
+  '/uk-control/edit-profile': typeof UkControlEditProfileRoute
+  '/uk-control/leads': typeof UkControlLeadsRoute
+  '/uk-control/payments': typeof UkControlPaymentsRoute
+  '/uk-control/reports': typeof UkControlReportsRoute
+  '/uk-control/staff': typeof UkControlStaffRouteWithChildren
+  '/uk-control/support-tickets': typeof UkControlSupportTicketsRoute
+  '/uk-control/users': typeof UkControlUsersRoute
   '/blog': typeof BlogIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/staff': typeof StaffIndexRoute
-  '/admin/staff/$id': typeof AdminStaffIdRoute
+  '/uk-control': typeof UkControlIndexRoute
   '/dashboard/support-tickets/$id': typeof DashboardSupportTicketsIdRoute
   '/profile/$id/porutham': typeof ProfileIdPoruthamRoute
   '/staff/lead/$id': typeof StaffLeadIdRoute
+  '/uk-control/staff/$id': typeof UkControlStaffIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/admin': typeof AdminRouteWithChildren
   '/browse': typeof BrowseRoute
   '/complete-profile': typeof CompleteProfileRoute
   '/contact': typeof ContactRoute
@@ -486,15 +485,7 @@ export interface FileRoutesById {
   '/staff': typeof StaffRouteWithChildren
   '/success-stories': typeof SuccessStoriesRoute
   '/terms': typeof TermsRoute
-  '/admin/bulk-upload': typeof AdminBulkUploadRoute
-  '/admin/cms': typeof AdminCmsRoute
-  '/admin/edit-profile': typeof AdminEditProfileRoute
-  '/admin/leads': typeof AdminLeadsRoute
-  '/admin/payments': typeof AdminPaymentsRoute
-  '/admin/reports': typeof AdminReportsRoute
-  '/admin/staff': typeof AdminStaffRouteWithChildren
-  '/admin/support-tickets': typeof AdminSupportTicketsRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/uk-control': typeof UkControlRouteWithChildren
   '/blog_/$slug': typeof BlogSlugRoute
   '/dashboard/edit-profile': typeof DashboardEditProfileRoute
   '/dashboard/messages': typeof DashboardMessagesRoute
@@ -511,21 +502,29 @@ export interface FileRoutesById {
   '/staff/leads': typeof StaffLeadsRoute
   '/staff/notes': typeof StaffNotesRoute
   '/staff/users': typeof StaffUsersRoute
-  '/admin/': typeof AdminIndexRoute
+  '/uk-control/bulk-upload': typeof UkControlBulkUploadRoute
+  '/uk-control/cms': typeof UkControlCmsRoute
+  '/uk-control/edit-profile': typeof UkControlEditProfileRoute
+  '/uk-control/leads': typeof UkControlLeadsRoute
+  '/uk-control/payments': typeof UkControlPaymentsRoute
+  '/uk-control/reports': typeof UkControlReportsRoute
+  '/uk-control/staff': typeof UkControlStaffRouteWithChildren
+  '/uk-control/support-tickets': typeof UkControlSupportTicketsRoute
+  '/uk-control/users': typeof UkControlUsersRoute
   '/blog/': typeof BlogIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/staff/': typeof StaffIndexRoute
-  '/admin/staff/$id': typeof AdminStaffIdRoute
+  '/uk-control/': typeof UkControlIndexRoute
   '/dashboard/support-tickets/$id': typeof DashboardSupportTicketsIdRoute
   '/profile/$id/porutham': typeof ProfileIdPoruthamRoute
   '/staff/lead/$id': typeof StaffLeadIdRoute
+  '/uk-control/staff/$id': typeof UkControlStaffIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/about'
-    | '/admin'
     | '/browse'
     | '/complete-profile'
     | '/contact'
@@ -546,15 +545,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/success-stories'
     | '/terms'
-    | '/admin/bulk-upload'
-    | '/admin/cms'
-    | '/admin/edit-profile'
-    | '/admin/leads'
-    | '/admin/payments'
-    | '/admin/reports'
-    | '/admin/staff'
-    | '/admin/support-tickets'
-    | '/admin/users'
+    | '/uk-control'
     | '/blog/$slug'
     | '/dashboard/edit-profile'
     | '/dashboard/messages'
@@ -571,14 +562,23 @@ export interface FileRouteTypes {
     | '/staff/leads'
     | '/staff/notes'
     | '/staff/users'
-    | '/admin/'
+    | '/uk-control/bulk-upload'
+    | '/uk-control/cms'
+    | '/uk-control/edit-profile'
+    | '/uk-control/leads'
+    | '/uk-control/payments'
+    | '/uk-control/reports'
+    | '/uk-control/staff'
+    | '/uk-control/support-tickets'
+    | '/uk-control/users'
     | '/blog/'
     | '/dashboard/'
     | '/staff/'
-    | '/admin/staff/$id'
+    | '/uk-control/'
     | '/dashboard/support-tickets/$id'
     | '/profile/$id/porutham'
     | '/staff/lead/$id'
+    | '/uk-control/staff/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -601,15 +601,6 @@ export interface FileRouteTypes {
     | '/search'
     | '/success-stories'
     | '/terms'
-    | '/admin/bulk-upload'
-    | '/admin/cms'
-    | '/admin/edit-profile'
-    | '/admin/leads'
-    | '/admin/payments'
-    | '/admin/reports'
-    | '/admin/staff'
-    | '/admin/support-tickets'
-    | '/admin/users'
     | '/blog/$slug'
     | '/dashboard/edit-profile'
     | '/dashboard/messages'
@@ -626,19 +617,27 @@ export interface FileRouteTypes {
     | '/staff/leads'
     | '/staff/notes'
     | '/staff/users'
-    | '/admin'
+    | '/uk-control/bulk-upload'
+    | '/uk-control/cms'
+    | '/uk-control/edit-profile'
+    | '/uk-control/leads'
+    | '/uk-control/payments'
+    | '/uk-control/reports'
+    | '/uk-control/staff'
+    | '/uk-control/support-tickets'
+    | '/uk-control/users'
     | '/blog'
     | '/dashboard'
     | '/staff'
-    | '/admin/staff/$id'
+    | '/uk-control'
     | '/dashboard/support-tickets/$id'
     | '/profile/$id/porutham'
     | '/staff/lead/$id'
+    | '/uk-control/staff/$id'
   id:
     | '__root__'
     | '/'
     | '/about'
-    | '/admin'
     | '/browse'
     | '/complete-profile'
     | '/contact'
@@ -659,15 +658,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/success-stories'
     | '/terms'
-    | '/admin/bulk-upload'
-    | '/admin/cms'
-    | '/admin/edit-profile'
-    | '/admin/leads'
-    | '/admin/payments'
-    | '/admin/reports'
-    | '/admin/staff'
-    | '/admin/support-tickets'
-    | '/admin/users'
+    | '/uk-control'
     | '/blog_/$slug'
     | '/dashboard/edit-profile'
     | '/dashboard/messages'
@@ -684,20 +675,28 @@ export interface FileRouteTypes {
     | '/staff/leads'
     | '/staff/notes'
     | '/staff/users'
-    | '/admin/'
+    | '/uk-control/bulk-upload'
+    | '/uk-control/cms'
+    | '/uk-control/edit-profile'
+    | '/uk-control/leads'
+    | '/uk-control/payments'
+    | '/uk-control/reports'
+    | '/uk-control/staff'
+    | '/uk-control/support-tickets'
+    | '/uk-control/users'
     | '/blog/'
     | '/dashboard/'
     | '/staff/'
-    | '/admin/staff/$id'
+    | '/uk-control/'
     | '/dashboard/support-tickets/$id'
     | '/profile/$id/porutham'
     | '/staff/lead/$id'
+    | '/uk-control/staff/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  AdminRoute: typeof AdminRouteWithChildren
   BrowseRoute: typeof BrowseRoute
   CompleteProfileRoute: typeof CompleteProfileRoute
   ContactRoute: typeof ContactRoute
@@ -718,6 +717,7 @@ export interface RootRouteChildren {
   StaffRoute: typeof StaffRouteWithChildren
   SuccessStoriesRoute: typeof SuccessStoriesRoute
   TermsRoute: typeof TermsRoute
+  UkControlRoute: typeof UkControlRouteWithChildren
   BlogSlugRoute: typeof BlogSlugRoute
   ProfileIdRoute: typeof ProfileIdRouteWithChildren
   BlogIndexRoute: typeof BlogIndexRoute
@@ -725,6 +725,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/uk-control': {
+      id: '/uk-control'
+      path: '/uk-control'
+      fullPath: '/uk-control'
+      preLoaderRoute: typeof UkControlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -865,13 +872,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BrowseRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -885,6 +885,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/uk-control/': {
+      id: '/uk-control/'
+      path: '/'
+      fullPath: '/uk-control/'
+      preLoaderRoute: typeof UkControlIndexRouteImport
+      parentRoute: typeof UkControlRoute
     }
     '/staff/': {
       id: '/staff/'
@@ -907,12 +914,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
+    '/uk-control/users': {
+      id: '/uk-control/users'
+      path: '/users'
+      fullPath: '/uk-control/users'
+      preLoaderRoute: typeof UkControlUsersRouteImport
+      parentRoute: typeof UkControlRoute
+    }
+    '/uk-control/support-tickets': {
+      id: '/uk-control/support-tickets'
+      path: '/support-tickets'
+      fullPath: '/uk-control/support-tickets'
+      preLoaderRoute: typeof UkControlSupportTicketsRouteImport
+      parentRoute: typeof UkControlRoute
+    }
+    '/uk-control/staff': {
+      id: '/uk-control/staff'
+      path: '/staff'
+      fullPath: '/uk-control/staff'
+      preLoaderRoute: typeof UkControlStaffRouteImport
+      parentRoute: typeof UkControlRoute
+    }
+    '/uk-control/reports': {
+      id: '/uk-control/reports'
+      path: '/reports'
+      fullPath: '/uk-control/reports'
+      preLoaderRoute: typeof UkControlReportsRouteImport
+      parentRoute: typeof UkControlRoute
+    }
+    '/uk-control/payments': {
+      id: '/uk-control/payments'
+      path: '/payments'
+      fullPath: '/uk-control/payments'
+      preLoaderRoute: typeof UkControlPaymentsRouteImport
+      parentRoute: typeof UkControlRoute
+    }
+    '/uk-control/leads': {
+      id: '/uk-control/leads'
+      path: '/leads'
+      fullPath: '/uk-control/leads'
+      preLoaderRoute: typeof UkControlLeadsRouteImport
+      parentRoute: typeof UkControlRoute
+    }
+    '/uk-control/edit-profile': {
+      id: '/uk-control/edit-profile'
+      path: '/edit-profile'
+      fullPath: '/uk-control/edit-profile'
+      preLoaderRoute: typeof UkControlEditProfileRouteImport
+      parentRoute: typeof UkControlRoute
+    }
+    '/uk-control/cms': {
+      id: '/uk-control/cms'
+      path: '/cms'
+      fullPath: '/uk-control/cms'
+      preLoaderRoute: typeof UkControlCmsRouteImport
+      parentRoute: typeof UkControlRoute
+    }
+    '/uk-control/bulk-upload': {
+      id: '/uk-control/bulk-upload'
+      path: '/bulk-upload'
+      fullPath: '/uk-control/bulk-upload'
+      preLoaderRoute: typeof UkControlBulkUploadRouteImport
+      parentRoute: typeof UkControlRoute
     }
     '/staff/users': {
       id: '/staff/users'
@@ -1026,68 +1089,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/support-tickets': {
-      id: '/admin/support-tickets'
-      path: '/support-tickets'
-      fullPath: '/admin/support-tickets'
-      preLoaderRoute: typeof AdminSupportTicketsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/staff': {
-      id: '/admin/staff'
-      path: '/staff'
-      fullPath: '/admin/staff'
-      preLoaderRoute: typeof AdminStaffRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/reports': {
-      id: '/admin/reports'
-      path: '/reports'
-      fullPath: '/admin/reports'
-      preLoaderRoute: typeof AdminReportsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/payments': {
-      id: '/admin/payments'
-      path: '/payments'
-      fullPath: '/admin/payments'
-      preLoaderRoute: typeof AdminPaymentsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/leads': {
-      id: '/admin/leads'
-      path: '/leads'
-      fullPath: '/admin/leads'
-      preLoaderRoute: typeof AdminLeadsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/edit-profile': {
-      id: '/admin/edit-profile'
-      path: '/edit-profile'
-      fullPath: '/admin/edit-profile'
-      preLoaderRoute: typeof AdminEditProfileRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/cms': {
-      id: '/admin/cms'
-      path: '/cms'
-      fullPath: '/admin/cms'
-      preLoaderRoute: typeof AdminCmsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/bulk-upload': {
-      id: '/admin/bulk-upload'
-      path: '/bulk-upload'
-      fullPath: '/admin/bulk-upload'
-      preLoaderRoute: typeof AdminBulkUploadRouteImport
-      parentRoute: typeof AdminRoute
+    '/uk-control/staff/$id': {
+      id: '/uk-control/staff/$id'
+      path: '/$id'
+      fullPath: '/uk-control/staff/$id'
+      preLoaderRoute: typeof UkControlStaffIdRouteImport
+      parentRoute: typeof UkControlStaffRoute
     }
     '/staff/lead/$id': {
       id: '/staff/lead/$id'
@@ -1110,55 +1117,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSupportTicketsIdRouteImport
       parentRoute: typeof DashboardSupportTicketsRoute
     }
-    '/admin/staff/$id': {
-      id: '/admin/staff/$id'
-      path: '/$id'
-      fullPath: '/admin/staff/$id'
-      preLoaderRoute: typeof AdminStaffIdRouteImport
-      parentRoute: typeof AdminStaffRoute
-    }
   }
 }
-
-interface AdminStaffRouteChildren {
-  AdminStaffIdRoute: typeof AdminStaffIdRoute
-}
-
-const AdminStaffRouteChildren: AdminStaffRouteChildren = {
-  AdminStaffIdRoute: AdminStaffIdRoute,
-}
-
-const AdminStaffRouteWithChildren = AdminStaffRoute._addFileChildren(
-  AdminStaffRouteChildren,
-)
-
-interface AdminRouteChildren {
-  AdminBulkUploadRoute: typeof AdminBulkUploadRoute
-  AdminCmsRoute: typeof AdminCmsRoute
-  AdminEditProfileRoute: typeof AdminEditProfileRoute
-  AdminLeadsRoute: typeof AdminLeadsRoute
-  AdminPaymentsRoute: typeof AdminPaymentsRoute
-  AdminReportsRoute: typeof AdminReportsRoute
-  AdminStaffRoute: typeof AdminStaffRouteWithChildren
-  AdminSupportTicketsRoute: typeof AdminSupportTicketsRoute
-  AdminUsersRoute: typeof AdminUsersRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminBulkUploadRoute: AdminBulkUploadRoute,
-  AdminCmsRoute: AdminCmsRoute,
-  AdminEditProfileRoute: AdminEditProfileRoute,
-  AdminLeadsRoute: AdminLeadsRoute,
-  AdminPaymentsRoute: AdminPaymentsRoute,
-  AdminReportsRoute: AdminReportsRoute,
-  AdminStaffRoute: AdminStaffRouteWithChildren,
-  AdminSupportTicketsRoute: AdminSupportTicketsRoute,
-  AdminUsersRoute: AdminUsersRoute,
-  AdminIndexRoute: AdminIndexRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface DashboardSupportTicketsRouteChildren {
   DashboardSupportTicketsIdRoute: typeof DashboardSupportTicketsIdRoute
@@ -1226,6 +1186,48 @@ const StaffRouteChildren: StaffRouteChildren = {
 
 const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
 
+interface UkControlStaffRouteChildren {
+  UkControlStaffIdRoute: typeof UkControlStaffIdRoute
+}
+
+const UkControlStaffRouteChildren: UkControlStaffRouteChildren = {
+  UkControlStaffIdRoute: UkControlStaffIdRoute,
+}
+
+const UkControlStaffRouteWithChildren = UkControlStaffRoute._addFileChildren(
+  UkControlStaffRouteChildren,
+)
+
+interface UkControlRouteChildren {
+  UkControlBulkUploadRoute: typeof UkControlBulkUploadRoute
+  UkControlCmsRoute: typeof UkControlCmsRoute
+  UkControlEditProfileRoute: typeof UkControlEditProfileRoute
+  UkControlLeadsRoute: typeof UkControlLeadsRoute
+  UkControlPaymentsRoute: typeof UkControlPaymentsRoute
+  UkControlReportsRoute: typeof UkControlReportsRoute
+  UkControlStaffRoute: typeof UkControlStaffRouteWithChildren
+  UkControlSupportTicketsRoute: typeof UkControlSupportTicketsRoute
+  UkControlUsersRoute: typeof UkControlUsersRoute
+  UkControlIndexRoute: typeof UkControlIndexRoute
+}
+
+const UkControlRouteChildren: UkControlRouteChildren = {
+  UkControlBulkUploadRoute: UkControlBulkUploadRoute,
+  UkControlCmsRoute: UkControlCmsRoute,
+  UkControlEditProfileRoute: UkControlEditProfileRoute,
+  UkControlLeadsRoute: UkControlLeadsRoute,
+  UkControlPaymentsRoute: UkControlPaymentsRoute,
+  UkControlReportsRoute: UkControlReportsRoute,
+  UkControlStaffRoute: UkControlStaffRouteWithChildren,
+  UkControlSupportTicketsRoute: UkControlSupportTicketsRoute,
+  UkControlUsersRoute: UkControlUsersRoute,
+  UkControlIndexRoute: UkControlIndexRoute,
+}
+
+const UkControlRouteWithChildren = UkControlRoute._addFileChildren(
+  UkControlRouteChildren,
+)
+
 interface ProfileIdRouteChildren {
   ProfileIdPoruthamRoute: typeof ProfileIdPoruthamRoute
 }
@@ -1241,7 +1243,6 @@ const ProfileIdRouteWithChildren = ProfileIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  AdminRoute: AdminRouteWithChildren,
   BrowseRoute: BrowseRoute,
   CompleteProfileRoute: CompleteProfileRoute,
   ContactRoute: ContactRoute,
@@ -1262,6 +1263,7 @@ const rootRouteChildren: RootRouteChildren = {
   StaffRoute: StaffRouteWithChildren,
   SuccessStoriesRoute: SuccessStoriesRoute,
   TermsRoute: TermsRoute,
+  UkControlRoute: UkControlRouteWithChildren,
   BlogSlugRoute: BlogSlugRoute,
   ProfileIdRoute: ProfileIdRouteWithChildren,
   BlogIndexRoute: BlogIndexRoute,

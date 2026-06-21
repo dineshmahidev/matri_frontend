@@ -38,7 +38,7 @@ export function requireRole(role: "admin" | "staff", pathname?: string) {
   }
 
   if (user.role !== "staff") {
-    if (user.role === "admin") throw redirect({ to: "/admin" });
+    if (user.role === "admin") throw redirect({ to: "/uk-control" });
     throw redirect({ to: "/dashboard" });
   }
   return user;

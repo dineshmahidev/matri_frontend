@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/layout/AppLayouts";
-import { StatusPill } from "./admin.index";
+import { StatusPill } from "./uk-control.index";
 import { Button } from "@/components/ui/button";
 import { Loader2, Upload, Download, Check, X, Edit as EditIcon, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 const TABS = ["All", "New", "Contacted", "Qualified", "Converted"];
 
-export const Route = createFileRoute("/admin/leads")({
+export const Route = createFileRoute("/uk-control/leads")({
   head: () => ({ meta: [{ title: "Leads — Admin" }] }),
   component: AdminLeads,
 });

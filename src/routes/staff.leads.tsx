@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/layout/AppLayouts";
-import { StatusPill } from "./admin.index";
+import { StatusPill } from "./uk-control.index";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";

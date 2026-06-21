@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 
-export const Route = createFileRoute("/admin/cms")({
+export const Route = createFileRoute("/uk-control/cms")({
   head: () => ({ meta: [{ title: "CMS — Admin" }] }),
   component: AdminCms,
 });

@@ -708,16 +708,6 @@ function Profile() {
 
             {/* Main Content Area */}
             <div className="relative flex h-[80vh] w-full items-center justify-center" onClick={(e) => e.stopPropagation()}>
-              {/* Navigation Left */}
-              {photos.length > 1 && (
-                <button
-                  onClick={() => setActivePhoto((prev) => (prev === 0 ? photos.length - 1 : prev - 1))}
-                  className="absolute left-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-              )}
-
               {/* Active Image */}
               <motion.img
                 key={activePhoto}
@@ -730,15 +720,6 @@ function Profile() {
                 className="max-h-full max-w-[90vw] rounded-xl object-contain shadow-elevated"
               />
 
-              {/* Navigation Right */}
-              {photos.length > 1 && (
-                <button
-                  onClick={() => setActivePhoto((prev) => (prev === photos.length - 1 ? 0 : prev + 1))}
-                  className="absolute right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-              )}
             </div>
 
             {/* Bottom thumbnail selector inside lightbox */}

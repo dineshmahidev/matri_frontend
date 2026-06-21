@@ -47,13 +47,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { StatusPill } from "./admin.index";
+import { StatusPill } from "./uk-control.index";
 import { RELIGIONS, CASTES, RELIGION_CASTE_MAP, OPTION_TRANSLATIONS } from "@/data/castes";
 import { RASIS, NAKSHATRAMS, RASI_NAKSHATRAM_MAP } from "@/data/astrology";
 import { EDUCATION_LEVELS, PROFESSIONS } from "@/data/education";
 import { MemberProfileFields } from "@/components/matrimony/MemberProfileFields";
 
-export const Route = createFileRoute("/admin/users")({
+export const Route = createFileRoute("/uk-control/users")({
   head: () => ({ meta: [{ title: "Users — Admin" }] }),
   component: AdminUsers,
 });

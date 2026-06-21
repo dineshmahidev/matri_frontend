@@ -16,7 +16,7 @@ type ReportsResponse = {
 
 const COLORS = ["oklch(0.7 0.02 240)", "oklch(0.78 0.14 75)", "oklch(0.62 0.21 18)", "oklch(0.55 0.15 160)", "oklch(0.65 0.12 290)"];
 
-export const Route = createFileRoute("/admin/reports")({
+export const Route = createFileRoute("/uk-control/reports")({
   head: () => ({ meta: [{ title: "Reports — Admin" }] }),
   component: AdminReports,
 });

@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { requireRole } from "@/lib/route-guards";
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/uk-control")({
   beforeLoad: ({ location }) => {
     requireRole("admin", location.pathname);
   },

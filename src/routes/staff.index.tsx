@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/layout/AppLayouts";
-import { StatusPill } from "./admin.index";
+import { StatusPill } from "./uk-control.index";
 import { Inbox, Phone, CheckCircle2, Loader2, LogIn, LogOut, Clock, History, Calendar, ChevronLeft, ChevronRight, Sun } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";

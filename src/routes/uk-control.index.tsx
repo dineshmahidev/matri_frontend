@@ -5,7 +5,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, A
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
-export const Route = createFileRoute("/admin/")({
+export const Route = createFileRoute("/uk-control/")({
   head: () => ({ meta: [{ title: "Admin Dashboard — Ungalkalyanam" }] }),
   component: AdminDash,
 });

@@ -7,7 +7,7 @@ import { Loader2, MessageSquare, ChevronRight, Clock, CheckCircle2, AlertCircle,
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-export const Route = createFileRoute("/admin/support-tickets")({
+export const Route = createFileRoute("/uk-control/support-tickets")({
   head: () => ({ meta: [{ title: "Support Tickets — Admin" }] }),
   component: AdminSupportTickets,
 });

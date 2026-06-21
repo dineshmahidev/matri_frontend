@@ -45,7 +45,7 @@ function Login() {
           return;
         }
         toast.success(language === "ta" ? "வெற்றிகரமாக உள்நுழைந்துள்ளீர்கள்!" : "Successfully logged in!");
-        navigate({ to: "/admin" });
+        navigate({ to: "/uk-control" });
         return;
       }
 
@@ -53,7 +53,7 @@ function Login() {
       toast.success(language === "ta" ? "வெற்றிகரமாக உள்நுழைந்துள்ளீர்கள்!" : "Successfully logged in!");
 
       if (user.role === "admin") {
-        navigate({ to: "/admin" });
+        navigate({ to: "/uk-control" });
       } else if (user.role === "staff") {
         navigate({ to: "/staff" });
       } else if (user.is_profile_completed === false) {

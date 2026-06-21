@@ -7,7 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/admin/bulk-upload")({
+export const Route = createFileRoute("/uk-control/bulk-upload")({
   head: () => ({ meta: [{ title: "Bulk Upload Users — Admin" }] }),
   component: BulkUpload,
 });

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link, Outlet, useMatchRoute } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/layout/AppLayouts";
-import { StatusPill } from "./admin.index";
+import { StatusPill } from "./uk-control.index";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, Clock, ArrowRight, X, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export const Route = createFileRoute("/admin/staff")({
+export const Route = createFileRoute("/uk-control/staff")({
   head: () => ({ meta: [{ title: "Staff — Admin" }] }),
   component: AdminStaff,
 });
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/admin/staff")({
 function AdminStaff() {
   const queryClient = useQueryClient();
   const matchRoute = useMatchRoute();
-  const isDetail = matchRoute({ to: "/admin/staff/$id" });
+  const isDetail = matchRoute({ to: "/uk-control/staff/$id" });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createName, setCreateName] = useState("");
   const [createEmail, setCreateEmail] = useState("");
@@ -103,7 +103,7 @@ function AdminStaff() {
             {staff.map((s: any) => (
               <Link
                 key={s.id}
-                to="/admin/staff/$id"
+                to="/uk-control/staff/$id"
                 params={{ id: String(s.id) }}
                 className="rounded-2xl border bg-card p-5 shadow-soft hover:shadow-md transition-all flex flex-col justify-between text-left"
               >
