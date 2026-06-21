@@ -4,10 +4,10 @@
  */
 export async function compressImage(
   file: File,
-  maxWidth = 1200,
-  quality = 0.82
+  maxWidth = 1000,
+  quality = 0.7
 ): Promise<File> {
-  if (!file.type.startsWith("image/") || file.size < 400_000) {
+  if (!file.type.startsWith("image/") || file.size < 200_000) {
     return file;
   }
 

@@ -50,15 +50,22 @@ function loadRazorpayScript() {
   });
 }
 
+interface PremiumConfig {
+  title: string;
+  description: string;
+  isTopup?: boolean;
+}
+
 export function UpgradeProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [premiumOpen, setPremiumOpen] = useState(false);
-  const [premiumConfig, setPremiumConfig] = useState({ title: "", description: "" });
+  const [premiumConfig, setPremiumConfig] = useState<PremiumConfig>({ title: "", description: "" });
   const openUpgrade = useCallback(() => setOpen(true), []);
-  const openPremiumPrompt = useCallback((title?: string, description?: string) => {
+  const openPremiumPrompt = useCallback((title?: string, description?: string, isTopup?: boolean) => {
     setPremiumConfig({
       title: title || "Upgrade to Unlock This Feature",
       description: description || "This is a premium feature. Upgrade your plan to get unlimited access to all features including messaging, contact views, AI Porutham matching, and more.",
+      isTopup,
     });
     setPremiumOpen(true);
   }, []);
@@ -71,6 +78,7 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
         open={premiumOpen}
         title={premiumConfig.title}
         description={premiumConfig.description}
+        isTopup={premiumConfig.isTopup}
         onClose={() => setPremiumOpen(false)}
         onUpgrade={() => { setPremiumOpen(false); setOpen(true); }}
       />
@@ -78,8 +86,8 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function PremiumPromptModal({ open, title, description, onClose, onUpgrade }: {
-  open: boolean; title: string; description: string; onClose: () => void; onUpgrade: () => void;
+function PremiumPromptModal({ open, title, description, isTopup, onClose, onUpgrade }: {
+  open: boolean; title: string; description: string; isTopup?: boolean; onClose: () => void; onUpgrade: () => void;
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -126,7 +134,11 @@ function PremiumPromptModal({ open, title, description, onClose, onUpgrade }: {
         </DialogHeader>
         <div className="flex flex-col gap-3 pb-4">
           <Button onClick={onUpgrade} className="gradient-rose text-white shadow-glow w-full h-12 text-base font-bold">
-            <Crown className="mr-2 h-5 w-5" /> Unlock Premium <ArrowUpRight className="ml-1 h-4 w-4" />
+            {isTopup ? (
+              <><Crown className="mr-2 h-5 w-5" /> Top Up Credits <ArrowUpRight className="ml-1 h-4 w-4" /></>
+            ) : (
+              <><Crown className="mr-2 h-5 w-5" /> Unlock Premium <ArrowUpRight className="ml-1 h-4 w-4" /></>
+            )}
           </Button>
           <Button variant="outline" onClick={onClose}>
             Maybe Later
@@ -162,6 +174,7 @@ function UpgradeModal({ open, onClose }: { open: boolean; onClose: () => void })
       const order: any = await api.post('/payments/create-order', {
         amount: plan.price,
         plan_id: plan.id,
+        notes: window.location.origin,
       });
 
       const rzp = new (window as any).Razorpay({
@@ -178,6 +191,7 @@ function UpgradeModal({ open, onClose }: { open: boolean; onClose: () => void })
               razorpay_payment_id: res.razorpay_payment_id,
               razorpay_signature: res.razorpay_signature,
               plan_id: plan.id,
+              notes: window.location.origin,
             });
             toast.success('Payment successful! Your plan has been upgraded.');
             navigate({ to: '/dashboard' });

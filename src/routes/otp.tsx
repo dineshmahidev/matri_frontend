@@ -83,11 +83,10 @@ function Otp() {
       
       toast.success(language === "ta" ? "கணக்கு வெற்றிகரமாக சரிபார்க்கப்பட்டது!" : "Account verified successfully!");
       
-      // Full page reload redirect to refresh auth state
       if (res.user.is_profile_completed === false) {
-        window.location.href = "/complete-profile";
+        navigate({ to: '/complete-profile' });
       } else {
-        window.location.href = "/dashboard";
+        navigate({ to: '/dashboard' });
       }
     } catch (err: any) {
       toast.error(err.message || (language === "ta" ? "தவறான அல்லது காலாவதியான OTP" : "Invalid or expired OTP"));

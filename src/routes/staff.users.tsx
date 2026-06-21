@@ -12,7 +12,8 @@ import {
   Loader2, 
   Crown, 
   ShieldCheck, 
-  X
+  X,
+  Coins
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -41,7 +42,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { RELIGIONS, CASTES } from "@/data/castes";
+import { RELIGIONS, CASTES, RELIGION_CASTE_MAP, OPTION_TRANSLATIONS } from "@/data/castes";
+import { RASIS, NAKSHATRAMS, RASI_NAKSHATRAM_MAP } from "@/data/astrology";
+import { EDUCATION_LEVELS, PROFESSIONS } from "@/data/education";
 
 export const Route = createFileRoute("/staff/users")({
   head: () => ({ meta: [{ title: "Users — Staff" }] }),
@@ -78,6 +81,25 @@ function StaffUsers() {
   const [maritalStatus, setMaritalStatus] = useState("");
   const [premium, setPremium] = useState(false);
   const [verified, setVerified] = useState(false);
+
+  // Horoscope fields
+  const [rasi, setRasi] = useState("");
+  const [nakshatram, setNakshatram] = useState("");
+
+  // Family fields
+  const [father, setFather] = useState("");
+  const [mother, setMother] = useState("");
+  const [siblings, setSiblings] = useState("");
+  const [familyStatus, setFamilyStatus] = useState("Middle Class");
+
+  // Partner Preferences fields
+  const [prefAgeRange, setPrefAgeRange] = useState("");
+  const [prefHeightRange, setPrefHeightRange] = useState("");
+  const [prefReligion, setPrefReligion] = useState("");
+  const [prefCommunity, setPrefCommunity] = useState("");
+  const [prefEducation, setPrefEducation] = useState("");
+  const [prefProfession, setPrefProfession] = useState("");
+  const [prefLocation, setPrefLocation] = useState("");
 
   // Fetch users (paginated)
   const { data: usersResponse, isLoading } = useQuery<any>({
@@ -142,6 +164,19 @@ function StaffUsers() {
     setMaritalStatus(user.maritalStatus || "Never Married");
     setPremium(!!user.premium);
     setVerified(!!user.verified);
+    setRasi(user.rasi || "");
+    setNakshatram(user.nakshatram || "");
+    setFather(user.family?.father || "");
+    setMother(user.family?.mother || "");
+    setSiblings(user.family?.siblings || "");
+    setFamilyStatus(user.family?.familyStatus || "Middle Class");
+    setPrefAgeRange(user.partnerPrefs?.ageRange || "");
+    setPrefHeightRange(user.partnerPrefs?.heightRange || "");
+    setPrefReligion(user.partnerPrefs?.religion || "");
+    setPrefCommunity(user.partnerPrefs?.community || "");
+    setPrefEducation(user.partnerPrefs?.education || "");
+    setPrefProfession(user.partnerPrefs?.profession || "");
+    setPrefLocation(user.partnerPrefs?.location || "");
     setIsEditing(true);
   };
 
@@ -171,6 +206,23 @@ function StaffUsers() {
         maritalStatus,
         premium,
         verified,
+        rasi,
+        nakshatram,
+        family: {
+          father,
+          mother,
+          siblings,
+          familyStatus,
+        },
+        partnerPrefs: {
+          ageRange: prefAgeRange,
+          heightRange: prefHeightRange,
+          religion: prefReligion,
+          community: prefCommunity,
+          education: prefEducation,
+          profession: prefProfession,
+          location: prefLocation,
+        },
       },
     });
   };
@@ -263,6 +315,7 @@ function StaffUsers() {
                     <th className="p-4">ID</th>
                     <th className="p-4">Location</th>
                     <th className="p-4">Plan Status</th>
+                    <th className="p-4">Credits</th>
                     <th className="p-4">Verification</th>
                     <th className="p-4 text-right">Actions</th>
                   </tr>
@@ -297,12 +350,18 @@ function StaffUsers() {
                       <td className="p-4 font-mono text-muted-foreground">{m.id}</td>
                       <td className="p-4">{m.city ? `${m.city}, ${m.state}` : "N/A"}</td>
                       <td className="p-4">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${m.premium ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-700"}`}>
-                          {m.premium ? "Premium" : "Free"}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${m.verified ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${m.premium ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-700"}`}>
+                            {m.premium ? "Premium" : "Free"}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className="inline-flex items-center gap-1 text-xs font-medium">
+                            <Coins className="h-3 w-3 text-amber-500" />
+                            {m.credits ?? 0}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${m.verified ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
                           {m.verified ? (
                             <>
                               <ShieldCheck className="h-3 w-3 mr-0.5" />
@@ -610,6 +669,151 @@ function StaffUsers() {
                     onChange={(e) => setBio(e.target.value)} 
                     rows={4}
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Horoscope Details */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Horoscope Details</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-rasi">Rasi (Moon Sign)</Label>
+                  <Select value={rasi} onValueChange={(v) => { setRasi(v); setNakshatram(""); }}>
+                    <SelectTrigger id="edit-rasi">
+                      <SelectValue placeholder="Select Rasi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RASIS.map((r) => (
+                        <SelectItem key={r.en} value={r.en}>{r.en}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-nakshatram">Nakshatram (Birth Star)</Label>
+                  <Select value={nakshatram} onValueChange={setNakshatram}>
+                    <SelectTrigger id="edit-nakshatram">
+                      <SelectValue placeholder="Select Nakshatram" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(rasi ? (RASI_NAKSHATRAM_MAP[rasi] || []) : NAKSHATRAMS.map(n => n.en)).map((nName: string) => (
+                        <SelectItem key={nName} value={nName}>{nName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Family Details */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Family Details</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-father">Father's Name</Label>
+                  <Input id="edit-father" value={father} onChange={(e) => setFather(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-mother">Mother's Name</Label>
+                  <Input id="edit-mother" value={mother} onChange={(e) => setMother(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-siblings">Sibling Details</Label>
+                  <Input id="edit-siblings" value={siblings} onChange={(e) => setSiblings(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-family-status">Family Status</Label>
+                  <Select value={familyStatus} onValueChange={setFamilyStatus}>
+                    <SelectTrigger id="edit-family-status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Middle Class">Middle Class</SelectItem>
+                      <SelectItem value="Upper Middle Class">Upper Middle Class</SelectItem>
+                      <SelectItem value="Rich / Affluent">Rich / Affluent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Partner Preferences */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Partner Preferences</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-pref-age">Age Range</Label>
+                  <Select value={prefAgeRange} onValueChange={setPrefAgeRange}>
+                    <SelectTrigger id="edit-pref-age">
+                      <SelectValue placeholder="Select age range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["18-25","25-30","30-35","35-40","40-45","45-50","50+"].map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-pref-height">Height Range</Label>
+                  <Select value={prefHeightRange} onValueChange={setPrefHeightRange}>
+                    <SelectTrigger id="edit-pref-height">
+                      <SelectValue placeholder="Select height range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["4ft-5ft","5ft-5ft6in","5ft6in-6ft","6ft+"].map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-pref-religion">Religion</Label>
+                  <Select value={prefReligion} onValueChange={setPrefReligion}>
+                    <SelectTrigger id="edit-pref-religion">
+                      <SelectValue placeholder="Select religion" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RELIGIONS.map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-pref-community">Community</Label>
+                  <Input id="edit-pref-community" value={prefCommunity} onChange={(e) => setPrefCommunity(e.target.value)} placeholder="Any" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-pref-education">Education</Label>
+                  <Select value={prefEducation} onValueChange={setPrefEducation}>
+                    <SelectTrigger id="edit-pref-education">
+                      <SelectValue placeholder="Select education" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EDUCATION_LEVELS.map((e) => (
+                        <SelectItem key={e} value={e}>{e}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-pref-profession">Profession</Label>
+                  <Select value={prefProfession} onValueChange={setPrefProfession}>
+                    <SelectTrigger id="edit-pref-profession">
+                      <SelectValue placeholder="Select profession" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROFESSIONS.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 col-span-2">
+                  <Label htmlFor="edit-pref-location">Preferred Location</Label>
+                  <Input id="edit-pref-location" value={prefLocation} onChange={(e) => setPrefLocation(e.target.value)} placeholder="e.g. Chennai, Bangalore" />
                 </div>
               </div>
             </div>

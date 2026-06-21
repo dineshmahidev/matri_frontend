@@ -5,13 +5,15 @@ import {
   Loader2, ArrowLeft, 
   FileText, User, MapPin, Briefcase, Users, Sparkles, Heart,
   Calendar, Phone, Mail, Church, Moon, Star, Globe, BookOpen, DollarSign,
-  Ruler, Languages, Lock, Eye, EyeOff, Clock, Home, Droplet
+  Ruler, Languages, Lock, Eye, EyeOff, Clock, Home, Droplet,
+  ImagePlus, X
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/language";
+import { compressImage } from "@/lib/compressImage";
 import { RELIGIONS, CASTES, MOTHER_TONGUES, RELIGION_CASTE_MAP, OPTION_TRANSLATIONS } from "@/data/castes";
 import { RASIS, NAKSHATRAMS, RASI_NAKSHATRAM_MAP } from "@/data/astrology";
 import { STATE_CITY_MAP } from "@/data/locations";
@@ -73,12 +75,18 @@ function EditProfile() {
   const [rasi, setRasi] = useState("");
   const [nakshatram, setNakshatram] = useState("");
 
+  // Gallery state
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+
   useEffect(() => {
     if (profile) {
       setName(profile.name || "");
       setMaritalStatus(profile.maritalStatus || "Never Married");
       setBio(profile.bio || "");
       setReligion(profile.religion || "");
+      if (profile.gallery) setGalleryPhotos(profile.gallery);
       setMotherTongue(profile.motherTongue || "");
       setCity(profile.city || "");
       setState(profile.state || "");
@@ -158,6 +166,51 @@ function EditProfile() {
       setCity(citiesForState[0]);
     } else {
       setCity("");
+    }
+  };
+
+  const addGalleryMutation = useMutation({
+    mutationFn: (formData: FormData) => api.post("/profile/gallery/bulk", formData),
+    onSuccess: (res: any) => {
+      const urls = res?.images || [];
+      if (urls.length > 0) setGalleryPhotos((prev) => [...prev, ...urls]);
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to upload gallery photos"),
+  });
+
+  const deleteGalleryMutation = useMutation({
+    mutationFn: (imageUrl: string) => api.delete("/profile/gallery", { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image_url: imageUrl }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-profile"] }),
+    onError: (err: any) => toast.error(err.message || "Failed to delete photo"),
+  });
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploadingGallery(true);
+    try {
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        const compressed = await compressImage(files[i]);
+        formData.append("images[]", compressed);
+      }
+      await addGalleryMutation.mutateAsync(formData);
+      toast.success(language === "ta" ? "புகைப்படங்கள் பதிவேற்றப்பட்டன!" : "Gallery photos uploaded!");
+    } catch {
+      toast.error(language === "ta" ? "புகைப்படங்களைப் பதிவேற்ற முடியவில்லை" : "Failed to upload gallery photos");
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const handleDeleteGallery = async (url: string) => {
+    try {
+      await deleteGalleryMutation.mutateAsync(url);
+      setGalleryPhotos((prev) => prev.filter((p) => p !== url));
+      toast.success(language === "ta" ? "புகைப்படம் நீக்கப்பட்டது!" : "Photo removed!");
+    } catch {
+      toast.error(language === "ta" ? "புகைப்படத்தை நீக்க முடியவில்லை" : "Failed to remove photo");
     }
   };
 
@@ -554,6 +607,76 @@ function EditProfile() {
               </select>
             </label>
           </div>
+        </div>
+
+        {/* Gallery Section */}
+        <div className="rounded-3xl border bg-card p-6 shadow-soft">
+          <h3 className="font-display text-xl font-semibold flex items-center gap-2">
+            <ImagePlus className="h-5 w-5 text-pink-500" />
+            {language === "ta" ? "புகைப்பட தொகுப்பு" : "Photo Gallery"}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            {language === "ta"
+              ? "உங்கள் புகைப்படங்களைச் சேர்க்கவும் (அதிகபட்சம் 3)."
+              : "Add your photos (max 3)."}
+          </p>
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            {Array.from({ length: 3 }).map((_, i) => {
+              const photo = galleryPhotos[i];
+              return (
+                <div
+                  key={i}
+                  className={`relative flex aspect-square items-center justify-center rounded-xl border-2 ${
+                    photo
+                      ? "border-primary/20 overflow-hidden"
+                      : "border-dashed border-muted-foreground/30 bg-muted/20"
+                  }`}
+                >
+                  {photo ? (
+                    <>
+                      <img src={photo} alt={`Gallery ${i + 1}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteGallery(photo)}
+                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (uploadingGallery) return;
+                        if (galleryPhotos.length < 3) galleryInputRef.current?.click();
+                      }}
+                      className="flex h-full w-full items-center justify-center"
+                      disabled={uploadingGallery}
+                    >
+                      {uploadingGallery ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      ) : (
+                        <ImagePlus className="h-6 w-6 text-muted-foreground/50" />
+                      )}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <input
+            type="file"
+            ref={galleryInputRef}
+            onChange={handleGalleryUpload}
+            accept="image/*"
+            multiple
+            className="hidden"
+          />
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            {language === "ta"
+              ? `${galleryPhotos.length}/3 புகைப்படங்கள் சேர்க்கப்பட்டுள்ளன`
+              : `${galleryPhotos.length}/3 photos added`}
+          </p>
         </div>
 
         {/* 7. Partner Preferences Section */}

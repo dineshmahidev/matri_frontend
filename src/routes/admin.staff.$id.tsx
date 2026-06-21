@@ -1,16 +1,18 @@
 import { useState, useRef } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/layout/AppLayouts";
 import { StatusPill } from "./admin.index";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Loader2, Phone, Calendar, Clock, UserCheck, Mail,
-  Briefcase, DollarSign, Download, Printer, Filter, X, Upload,
-  FileSpreadsheet,
+  Briefcase, DollarSign, Download, Printer, Filter, Upload,
+  FileSpreadsheet, Edit, Trash2, X,
 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/staff/$id")({
@@ -58,6 +60,7 @@ function decodeStaffRouteId(routeId: string): string {
 
 function AdminStaffDetail() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const staffId = decodeStaffRouteId(id);
   const queryClient = useQueryClient();
   const printRef = useRef<HTMLDivElement>(null);
@@ -66,6 +69,41 @@ function AdminStaffDetail() {
   const [toDate, setToDate] = useState(todayStr());
   const [leadTab, setLeadTab] = useState<"all" | "converted" | "rejected">("all");
   const [isUploading, setIsUploading] = useState(false);
+
+  // Edit staff state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+
+  // Delete staff state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const updateStaffMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/admin/staff/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-staff-detail", staffId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-staff"] });
+      toast.success("Staff member updated successfully");
+      setShowEditModal(false);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update staff");
+    },
+  });
+
+  const deleteStaffMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/admin/staff/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-staff"] });
+      toast.success("Staff member deleted successfully");
+      navigate({ to: "/admin/staff" });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete staff");
+    },
+  });
 
   const { data: staff, isLoading } = useQuery<any>({
     queryKey: ["admin-staff-detail", staffId],
@@ -199,6 +237,18 @@ function AdminStaffDetail() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => {
+              setEditName(staff.name || "");
+              setEditEmail(staff.email || "");
+              setEditPhone(staff.mobile || "");
+              setEditPassword("");
+              setShowEditModal(true);
+            }}>
+              <Edit className="mr-1.5 h-4 w-4" /> Edit
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => setShowDeleteConfirm(true)}>
+              <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+            </Button>
             <Button variant="outline" size="sm" onClick={handlePrint}>
               <Printer className="mr-1.5 h-4 w-4" /> Print report
             </Button>
@@ -342,6 +392,73 @@ function AdminStaffDetail() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit Staff Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-md bg-card border rounded-3xl p-6 shadow-elevated">
+            <button onClick={() => setShowEditModal(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer">
+              <X className="h-5 w-5" />
+            </button>
+            <h2 className="font-display text-xl font-bold mb-2">Edit Staff Details</h2>
+            <p className="text-sm text-muted-foreground mb-6">Update staff member information.</p>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const data: any = {};
+              if (editName) data.name = editName;
+              if (editEmail) data.email = editEmail;
+              if (editPhone) data.phone = editPhone;
+              if (editPassword) data.password = editPassword;
+              updateStaffMutation.mutate({ id: staff.staffId || parseInt(staffId), data });
+            }} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-staff-name">Full Name</Label>
+                <Input id="edit-staff-name" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-staff-email">Email Address</Label>
+                <Input id="edit-staff-email" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-staff-phone">Phone Number</Label>
+                <Input id="edit-staff-phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-staff-password">New Password (leave blank to keep current)</Label>
+                <Input id="edit-staff-password" type="password" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} placeholder="Min 8 characters" minLength={8} />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={() => setShowEditModal(false)} className="flex-1">Cancel</Button>
+                <Button type="submit" className="flex-1 gradient-rose text-white" disabled={updateStaffMutation.isPending}>
+                  {updateStaffMutation.isPending ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Saving...</> : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-sm bg-card border rounded-3xl p-6 shadow-elevated text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-4">
+              <Trash2 className="h-7 w-7" />
+            </div>
+            <h2 className="font-display text-xl font-bold mb-2">Delete Staff Member</h2>
+            <p className="text-sm text-muted-foreground mb-2">
+              Are you sure you want to delete <strong>{staff?.name}</strong>?
+            </p>
+            <p className="text-xs text-muted-foreground mb-6">This action is irreversible. All associated data will be removed.</p>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="flex-1">Cancel</Button>
+              <Button variant="destructive" onClick={() => deleteStaffMutation.mutate(staff.staffId || parseInt(staffId))} className="flex-1" disabled={deleteStaffMutation.isPending}>
+                {deleteStaffMutation.isPending ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Deleting...</> : "Delete"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Printable report */}
       <div id="staff-print-report" ref={printRef} className="hidden print:block">

@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/layout/AppLayouts";
 import { StatusPill } from "./admin.index";
 import { Button } from "@/components/ui/button";
-import { Loader2, Upload, Download, Check, X, Edit as EditIcon } from "lucide-react";
+import { Loader2, Upload, Download, Check, X, Edit as EditIcon, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, BASE_URL } from "@/lib/api";
 import { toast } from "sonner";
@@ -61,6 +61,18 @@ function AdminLeads() {
     },
     onSuccess: (res: any) => { queryClient.invalidateQueries({ queryKey: ["admin-leads"] }); toast.success(res.message || "Imported"); },
     onError: (err: any) => toast.error(err.message || "Import failed"),
+  });
+
+  const deleteLeadMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/admin/leads/${id}`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-leads"] }); toast.success("Lead deleted"); },
+    onError: (err: any) => toast.error(err.message || "Delete failed"),
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => api.post("/admin/leads/bulk-delete", { ids }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-leads"] }); setSelected(new Set()); toast.success("Selected leads deleted"); },
+    onError: (err: any) => toast.error(err.message || "Bulk delete failed"),
   });
 
   const toggleSelect = (id: number) => {
@@ -133,6 +145,16 @@ function AdminLeads() {
               <Upload className="mr-1.5 h-4 w-4" /> {importMutation.isPending ? "Importing..." : "Import CSV"}
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport}><Download className="mr-1.5 h-4 w-4" /> Export CSV</Button>
+            <Button variant="outline" size="sm" onClick={() => {
+              const csv = `name,phone,email,source,status\nJohn Doe,9876543210,john@example.com,Website,New\nJane Smith,9876543211,jane@example.com,Referral,Contacted`;
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url; a.download = "sample-leads.csv"; a.click();
+              URL.revokeObjectURL(url);
+            }}>
+              <Download className="mr-1.5 h-4 w-4" /> Sample CSV
+            </Button>
           </div>
         </div>
 
@@ -149,6 +171,12 @@ function AdminLeads() {
             <Button size="sm" onClick={bulkAssign} disabled={!bulkStaffId || bulkAssignMutation.isPending}>
               {bulkAssignMutation.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
               Assign
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => {
+              if (confirm(`Delete ${selected.size} selected leads?`)) bulkDeleteMutation.mutate(Array.from(selected));
+            }} disabled={bulkDeleteMutation.isPending}>
+              {bulkDeleteMutation.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1 h-3 w-3" />}
+              Delete
             </Button>
             <Button variant="ghost" size="sm" onClick={() => { setSelected(new Set()); setBulkStaffId(""); }}>Clear</Button>
           </div>
@@ -263,9 +291,16 @@ function AdminLeads() {
                             <button onClick={() => setEditingId(null)} className="rounded-md p-1 text-muted-foreground hover:bg-muted" title="Cancel"><X className="h-4 w-4" /></button>
                           </div>
                         ) : (
-                          <button type="button" onClick={() => startEdit(l)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="Edit">
-                            <EditIcon className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button type="button" onClick={() => startEdit(l)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="Edit">
+                              <EditIcon className="h-4 w-4" />
+                            </button>
+                            <button type="button" onClick={() => {
+                              if (confirm(`Delete lead "${l.name}"?`)) deleteLeadMutation.mutate(l.id);
+                            }} className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors" title="Delete">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>

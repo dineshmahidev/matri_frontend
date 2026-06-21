@@ -70,6 +70,7 @@ function Pricing() {
       const order = await api.post("/payments/create-order", {
         amount: plan.price,
         plan_id: plan.id,
+        notes: window.location.origin,
       });
 
       // 2. Initialize Razorpay Checkout
@@ -88,6 +89,7 @@ function Pricing() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               plan_id: plan.id,
+              notes: window.location.origin,
             });
             toast.success("Payment successful! Your plan has been upgraded.");
             navigate({ to: "/dashboard" });
@@ -129,7 +131,51 @@ function Pricing() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="mt-14 grid gap-6 lg:grid-cols-3">
+          <div className="mt-14 grid gap-6 lg:grid-cols-4">
+            {/* Free Plan */}
+            <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="relative flex flex-col rounded-3xl border border-dashed bg-card/50 p-8 shadow-soft">
+              <div className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-display text-2xl font-bold">Free</h3>
+              </div>
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="font-display text-5xl font-bold">₹0</span>
+                <span className="text-sm text-muted-foreground">/ forever</span>
+              </div>
+              <div className="mt-6 flex-1 space-y-4">
+                <ul className="space-y-2 text-sm text-left">
+                  <li className="flex items-start gap-2 font-semibold text-muted-foreground text-xs uppercase tracking-wide">Free tier includes:</li>
+                  <li className="flex items-start gap-2"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground"><Check className="h-3 w-3" /></span>Create your profile</li>
+                  <li className="flex items-start gap-2"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground"><Check className="h-3 w-3" /></span>Upload up to 3 photos</li>
+                  <li className="flex items-start gap-2"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground"><Check className="h-3 w-3" /></span>Browse matches</li>
+                  <li className="flex items-start gap-2"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground"><Check className="h-3 w-3" /></span>Receive interests</li>
+                </ul>
+                <div className="border-t pt-3 space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-muted-foreground"><Eye className="h-4 w-4" /> Contact views</span>
+                    <span className="font-bold">0</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-muted-foreground"><MessageCircle className="h-4 w-4" /> Chat sends</span>
+                    <span className="font-bold">0</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-muted-foreground"><Heart className="h-4 w-4" /> Interest sends</span>
+                    <span className="font-bold">0</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-muted-foreground"><Brain className="h-4 w-4" /> AI Porutham</span>
+                    <span className="font-bold">—</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-muted-foreground">Photos</span>
+                    <span className="font-bold">3</span>
+                  </div>
+                </div>
+              </div>
+              <Button disabled className="mt-8" variant="outline">Current Plan</Button>
+            </motion.div>
             {plans.map((p, i) => (
               <motion.div key={p.id} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
                 className={`relative flex flex-col rounded-3xl border bg-card p-8 shadow-soft ${p.popular ? "ring-2 ring-primary shadow-elevated" : ""}`}>

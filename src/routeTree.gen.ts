@@ -60,6 +60,7 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminLeadsRouteImport } from './routes/admin.leads'
 import { Route as AdminEditProfileRouteImport } from './routes/admin.edit-profile'
 import { Route as AdminCmsRouteImport } from './routes/admin.cms'
+import { Route as AdminBulkUploadRouteImport } from './routes/admin.bulk-upload'
 import { Route as StaffLeadIdRouteImport } from './routes/staff.lead.$id'
 import { Route as ProfileIdPoruthamRouteImport } from './routes/profile.$id.porutham'
 import { Route as DashboardSupportTicketsIdRouteImport } from './routes/dashboard.support-tickets.$id'
@@ -320,6 +321,11 @@ const AdminCmsRoute = AdminCmsRouteImport.update({
   path: '/cms',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminBulkUploadRoute = AdminBulkUploadRouteImport.update({
+  id: '/bulk-upload',
+  path: '/bulk-upload',
+  getParentRoute: () => AdminRoute,
+} as any)
 const StaffLeadIdRoute = StaffLeadIdRouteImport.update({
   id: '/lead/$id',
   path: '/lead/$id',
@@ -366,6 +372,7 @@ export interface FileRoutesByFullPath {
   '/staff': typeof StaffRouteWithChildren
   '/success-stories': typeof SuccessStoriesRoute
   '/terms': typeof TermsRoute
+  '/admin/bulk-upload': typeof AdminBulkUploadRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/edit-profile': typeof AdminEditProfileRoute
   '/admin/leads': typeof AdminLeadsRoute
@@ -420,6 +427,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/success-stories': typeof SuccessStoriesRoute
   '/terms': typeof TermsRoute
+  '/admin/bulk-upload': typeof AdminBulkUploadRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/edit-profile': typeof AdminEditProfileRoute
   '/admin/leads': typeof AdminLeadsRoute
@@ -478,6 +486,7 @@ export interface FileRoutesById {
   '/staff': typeof StaffRouteWithChildren
   '/success-stories': typeof SuccessStoriesRoute
   '/terms': typeof TermsRoute
+  '/admin/bulk-upload': typeof AdminBulkUploadRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/edit-profile': typeof AdminEditProfileRoute
   '/admin/leads': typeof AdminLeadsRoute
@@ -537,6 +546,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/success-stories'
     | '/terms'
+    | '/admin/bulk-upload'
     | '/admin/cms'
     | '/admin/edit-profile'
     | '/admin/leads'
@@ -591,6 +601,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/success-stories'
     | '/terms'
+    | '/admin/bulk-upload'
     | '/admin/cms'
     | '/admin/edit-profile'
     | '/admin/leads'
@@ -648,6 +659,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/success-stories'
     | '/terms'
+    | '/admin/bulk-upload'
     | '/admin/cms'
     | '/admin/edit-profile'
     | '/admin/leads'
@@ -1070,6 +1082,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCmsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/bulk-upload': {
+      id: '/admin/bulk-upload'
+      path: '/bulk-upload'
+      fullPath: '/admin/bulk-upload'
+      preLoaderRoute: typeof AdminBulkUploadRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/staff/lead/$id': {
       id: '/staff/lead/$id'
       path: '/lead/$id'
@@ -1114,6 +1133,7 @@ const AdminStaffRouteWithChildren = AdminStaffRoute._addFileChildren(
 )
 
 interface AdminRouteChildren {
+  AdminBulkUploadRoute: typeof AdminBulkUploadRoute
   AdminCmsRoute: typeof AdminCmsRoute
   AdminEditProfileRoute: typeof AdminEditProfileRoute
   AdminLeadsRoute: typeof AdminLeadsRoute
@@ -1126,6 +1146,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminBulkUploadRoute: AdminBulkUploadRoute,
   AdminCmsRoute: AdminCmsRoute,
   AdminEditProfileRoute: AdminEditProfileRoute,
   AdminLeadsRoute: AdminLeadsRoute,

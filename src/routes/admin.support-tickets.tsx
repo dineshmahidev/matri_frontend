@@ -35,11 +35,13 @@ function AdminSupportTickets() {
 
   const replyMutation = useMutation({
     mutationFn: (vars: { id: number; admin_reply: string; status: string }) =>
-      api.put(`/admin/support-tickets/${vars.id}`, { admin_reply: vars.admin_reply, status: vars.status }),
-    onSuccess: () => {
+      api.put<any>(`/admin/support-tickets/${vars.id}`, { admin_reply: vars.admin_reply, status: vars.status }),
+    onSuccess: (res: any, vars) => {
       toast.success("Reply sent");
       setReplyText("");
-      setSelected(null);
+      if (selected) {
+        setSelected({ ...selected, ...res?.ticket, admin_reply: vars.admin_reply, status: vars.status, replied_at: new Date().toISOString() });
+      }
       queryClient.invalidateQueries({ queryKey: ["admin-support-tickets"] });
     },
     onError: (err: any) => toast.error(err.message || "Failed to send reply"),
@@ -98,7 +100,7 @@ function AdminSupportTickets() {
                       <span className="text-[11px] text-muted-foreground">{t.category}</span>
                     </div>
                     <p className="font-semibold text-sm truncate">{t.subject}</p>
-                    <p className="text-xs text-muted-foreground truncate">{t.user?.name} — {new Date(t.created_at).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground truncate">{t.user?.name} ({t.user?.member_profile?.display_id || `UK00${10000 + (t.user?.member_profile?.id || t.user?.id)}`}) — {new Date(t.created_at).toLocaleDateString()}</p>
                   </div>
                 </button>
               ))}
@@ -107,7 +109,7 @@ function AdminSupportTickets() {
             {selected && (
               <div className="rounded-2xl border bg-card p-5 shadow-soft space-y-4 lg:sticky lg:top-24 lg:self-start">
                 <div>
-                  <p className="text-xs text-muted-foreground">{selected.category} — {selected.user?.name}</p>
+                  <p className="text-xs text-muted-foreground">{selected.category} — {selected.user?.name} ({selected.user?.member_profile?.display_id || `UK00${10000 + (selected.user?.member_profile?.id || selected.user?.id)}`})</p>
                   <h3 className="font-display font-bold">{selected.subject}</h3>
                 </div>
 

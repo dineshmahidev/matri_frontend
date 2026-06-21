@@ -67,6 +67,7 @@ function Profile() {
   const [saved, setSaved] = useState(m.isSaved || false);
   const [activePhoto, setActivePhoto] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [autoChecked, setAutoChecked] = useState(false);
 
   useEffect(() => { setInterestSent(m.interestSent || false); }, [m.interestSent]);
   useEffect(() => { setSaved(m.isSaved || false); }, [m.isSaved]);
@@ -86,7 +87,7 @@ function Profile() {
     enabled: !!token,
   });
   const myProfile = myProfileRes?.data;
-  const hasDobTob = myProfile?.dob && myProfile?.tob && m.dob && m.tob;
+  const myIsPremium = myProfile?.premium ?? false;
   const hasMyRasi = myProfile?.rasi && myProfile?.nakshatram;
   const hasTargetRasi = m.rasi && m.nakshatram;
 
@@ -95,6 +96,14 @@ function Profile() {
     queryFn: () => api.get<any>(`/members/${id}/match`),
     enabled: false,
   });
+
+  // Auto-open AI Porutham popup when both profiles have horoscope data
+  useEffect(() => {
+    if (!autoChecked && hasMyRasi && hasTargetRasi && myProfile && m) {
+      setAutoChecked(true);
+      handleCheckMatch();
+    }
+  }, [myProfile, m, hasMyRasi, hasTargetRasi, handleCheckMatch]);
 
   const handleCheckMatch = async () => {
     if (!hasMyRasi) {
@@ -140,7 +149,7 @@ function Profile() {
     } catch (err: any) {
       const msg = err.message || "";
       if (msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("upgrade") || msg.toLowerCase().includes("premium") || msg.toLowerCase().includes("credit") || msg.toLowerCase().includes("insufficient")) {
-        openPremiumPrompt("Unlock Contact Details", "You've run out of contact view credits. Upgrade to unlock unlimited contact views and message all members freely.");
+        openPremiumPrompt("Unlock Contact Details", myIsPremium ? "You've run out of credits. Top up your plan to continue viewing contact details." : "You've run out of contact view credits. Upgrade to unlock unlimited contact views and message all members freely.", myIsPremium);
       } else {
         toast.error(msg || "Failed to unlock profile.");
       }
@@ -195,6 +204,10 @@ function Profile() {
       const msg = (err?.message || err?.error || "").toLowerCase();
       if (msg.includes("premium") || msg.includes("upgrade")) {
         openPremiumPrompt("Send Interest", "Sending interest is a premium feature. Upgrade your plan to connect with members.");
+        return;
+      }
+      if (msg.includes("insufficient") || msg.includes("credits")) {
+        openPremiumPrompt("Insufficient Credits", myIsPremium ? "You've used all your interest credits. Top up your plan to continue sending interests." : "You need credits to send interest. Each interest costs 1 credit. Upgrade to get started.", myIsPremium);
         return;
       }
       toast.error(err.message || "Failed to send interest. Please log in first.");
@@ -338,19 +351,32 @@ function Profile() {
       {/* ── THUMBNAILS GALLERY (DOWNSIDE/BELOW CONTAINER) ───────────── */}
       {photos.length > 1 && (
         <div className="flex gap-3 mt-4 justify-center px-4 overflow-x-auto py-1">
-          {photos.map((p: string, i: number) => (
-            <button
-              key={i}
-              onClick={() => setActivePhoto(i)}
-              className={`relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-2xl border-2 transition-all hover:scale-105 active:scale-95 ${
-                activePhoto === i
-                  ? "border-primary scale-110 shadow-elevated"
-                  : "border-border opacity-70 hover:opacity-100"
-              }`}
-            >
-              <img src={p} alt="" className="h-full w-full object-cover object-top" />
-            </button>
-          ))}
+          {photos.map((p: string, i: number) => {
+            const isLocked = !myIsPremium && i > 0; // lock gallery photos (not main photo) for free users
+            return (
+              <div
+                key={i}
+                className={`relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-2xl border-2 ${
+                  activePhoto === i
+                    ? "border-primary scale-110 shadow-elevated"
+                    : "border-border opacity-70"
+                }`}
+              >
+                {isLocked ? (
+                  <div className="flex h-full w-full items-center justify-center bg-muted/80">
+                    <Lock className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setActivePhoto(i)}
+                    className="h-full w-full transition-all hover:scale-105 active:scale-95"
+                  >
+                    <img src={p} alt="" className="h-full w-full object-cover object-top" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
       </div>
@@ -504,7 +530,7 @@ function Profile() {
                 <div className="flex-1">
                   <p className="font-display text-lg font-bold">Contact details locked</p>
                   <p className="text-sm text-white/80 mt-0.5">
-                    {isTamil ? "5 கிரெடிட்களைப் பயன்படுத்தி காண்க" : "Use 5 credits to unlock"}
+                    {isTamil ? "கிரெடிட்களைப் பயன்படுத்தி காண்க" : "Use credits to unlock"}
                   </p>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
@@ -512,7 +538,7 @@ function Profile() {
                     onClick={() => setIsUnlockModalOpen(true)}
                     className="flex-1 sm:flex-none bg-white text-primary hover:bg-white/90 font-semibold shadow-soft"
                   >
-                    {isTamil ? "5 கிரெடிட்களைப் பயன்படுத்தவும்" : "Use 5 Credits"}
+                    {isTamil ? "கிரெடிட்களைப் பயன்படுத்தவும்" : "Use Credits"}
                   </Button>
                   <Button
                     asChild
@@ -719,17 +745,27 @@ function Profile() {
             {/* Bottom thumbnail selector inside lightbox */}
             {photos.length > 1 && (
               <div className="absolute bottom-6 flex gap-2 overflow-x-auto max-w-[80vw] px-4 py-2" onClick={(e) => e.stopPropagation()}>
-                {photos.map((p, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActivePhoto(idx)}
-                    className={`h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 transition-all cursor-pointer ${
-                      activePhoto === idx ? "border-white scale-110" : "border-white/25 opacity-60 hover:opacity-100"
-                    }`}
-                  >
-                    <img src={p} alt="" className="h-full w-full object-cover" />
-                  </button>
-                ))}
+                {photos.map((p, idx) => {
+                  const isLocked = !myIsPremium && idx > 0;
+                  return (
+                    <div
+                      key={idx}
+                      className={`h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                        activePhoto === idx ? "border-white scale-110" : "border-white/25 opacity-60"
+                      } ${isLocked ? "" : "cursor-pointer"}`}
+                    >
+                      {isLocked ? (
+                        <div className="flex h-full w-full items-center justify-center bg-black/60">
+                          <Lock className="h-4 w-4 text-white/70" />
+                        </div>
+                      ) : (
+                        <button onClick={() => setActivePhoto(idx)} className="h-full w-full">
+                          <img src={p} alt="" className="h-full w-full object-cover" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </motion.div>
@@ -763,8 +799,8 @@ function Profile() {
                 </h3>
                 <p className="text-sm text-muted-foreground mt-2">
                   {isTamil 
-                    ? "இந்த வரனின் கைபேசி எண் மற்றும் அரட்டை விவரங்களை பார்க்க 5 கிரெடிட்கள் கழிக்கப்படும்." 
-                    : "Deduct 5 credits to reveal this member's phone number and enable chat."}
+                    ? "இந்த வரனின் கைபேசி எண் மற்றும் அரட்டை விவரங்களை பார்க்க கிரெடிட்கள் கழிக்கப்படும்." 
+                    : "Deduct credits to reveal this member's phone number and enable chat."}
                 </p>
                 
                 {/* Balance preview */}
@@ -809,7 +845,7 @@ function Profile() {
                     {isUnlocking ? (
                       <Loader2 className="h-4 w-4 animate-spin text-amber-950" />
                     ) : (
-                      isTamil ? "உறுதிப்படுத்து (5 கிரெடிட்கள்)" : "Confirm (5 Credits)"
+                      isTamil ? "உறுதிப்படுத்து" : "Confirm"
                     )}
                   </Button>
                 </div>
@@ -836,53 +872,7 @@ function Profile() {
                 <X className="h-5 w-5" />
               </button>
 
-              {!hasDobTob ? (
-                <div className="text-center py-6">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 mb-4 animate-bounce">
-                    <Sparkles className="h-7 w-7 fill-amber-500/20" />
-                  </div>
-                  <h3 className="font-display text-lg font-bold text-foreground">
-                    {isTamil ? "ஜாதக விபரம் தேவை" : "Birth Details Required"}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-2 px-6">
-                    {isTamil 
-                      ? "ஜாதக பொருத்தம் பார்க்க இருவருக்கும் பிறந்த தேதி மற்றும் நேரம் குறிப்பிடப்பட்டிருக்க வேண்டும்." 
-                      : "Both profiles must have Date of Birth and Time of Birth set to calculate horoscope matching."}
-                  </p>
-                  
-                  <div className="mt-4 max-w-sm mx-auto space-y-2 text-left text-xs bg-muted/55 p-4 rounded-2xl border border-border/60">
-                    <div className="flex items-center justify-between">
-                      <span>{isTamil ? "உங்கள் ஜாதகம்:" : "Your Horoscope:"}</span>
-                      {myProfile?.dob && myProfile?.tob ? (
-                        <span className="text-emerald-600 font-bold">✓ {isTamil ? "உள்ளது" : "Configured"}</span>
-                      ) : (
-                        <span className="text-rose-600 font-bold">✗ {isTamil ? "தேவை" : "Missing"}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>{isTamil ? "இவர்களின் ஜாதகம்:" : "Their Horoscope:"}</span>
-                      {m.dob && m.tob ? (
-                        <span className="text-emerald-600 font-bold">✓ {isTamil ? "உள்ளது" : "Configured"}</span>
-                      ) : (
-                        <span className="text-rose-600 font-bold">✗ {isTamil ? "தேவை" : "Missing"}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex justify-center gap-3">
-                    <Button variant="outline" onClick={() => setIsMatchModalOpen(false)} className="rounded-xl cursor-pointer">
-                      {isTamil ? "மூடுக" : "Close"}
-                    </Button>
-                    {(!myProfile?.dob || !myProfile?.tob) && (
-                      <Button asChild className="gradient-gold text-amber-950 font-bold rounded-xl shadow-glow cursor-pointer">
-                        <Link to="/dashboard/edit-profile">
-                          {isTamil ? "அமைக்க" : "Configure Now"}
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ) : loadingMatch ? (
+              {loadingMatch ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                   <div className="w-40 h-40 mb-4 mx-auto">
                     <img src={aiMatchGif} alt="AI Matching" className="w-full h-full object-contain" />
@@ -1023,7 +1013,7 @@ function Profile() {
       </AnimatePresence>
 
       {/* ── FLOATING MATCH PORUTHAM BUTTON (BOTTOM RIGHT OF SCREEN) ── */}
-      {hasMyRasi && hasTargetRasi && myProfile?.dob && myProfile?.tob && m.dob && m.tob && (
+      {hasMyRasi && hasTargetRasi && (
       <motion.button
         onClick={handleCheckMatch}
         initial={{ opacity: 0, scale: 0.8 }}

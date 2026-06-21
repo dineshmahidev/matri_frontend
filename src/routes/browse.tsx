@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProfileCard } from "@/components/matrimony/ProfileCard";
@@ -94,6 +94,7 @@ export function BrowseLayout({ title, subtitle, members, children }: BrowseLayou
 }
 
 function Browse() {
+  const navigate = useNavigate();
   const { language, t } = useLanguage();
   const token = typeof window !== 'undefined' ? localStorage.getItem('ungalkalyanam_token') : null;
   const [activeTab, setActiveTab] = useState<"all" | "recommended" | "saved" | "newjoin">("all");
@@ -187,7 +188,7 @@ function Browse() {
         <div className="flex h-16 items-center gap-3 px-4 sm:px-6 max-w-7xl mx-auto">
           {token && (
             <button 
-              onClick={() => window.location.href = '/dashboard'}
+              onClick={() => navigate({ to: '/dashboard' })}
               className="hidden lg:flex p-2 -ml-2 rounded-full hover:bg-muted shrink-0 transition-colors"
             >
               <ChevronLeft className="h-5 w-5 text-foreground" />
@@ -324,10 +325,10 @@ function Browse() {
                   {language === "ta" ? "பரிந்துரைக்கப்பட்ட சுயவிவரங்களைக் காண தயவுசெய்து உங்கள் கணக்கில் உள்நுழையவும்." : "Please log in to view profiles recommended for you based on your partner preferences."}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
-                  <Button className="w-full" onClick={() => window.location.href = '/login'}>
+                  <Button className="w-full" onClick={() => navigate({ to: '/login' })}>
                     {language === "ta" ? "உள்நுழை" : "Log In"}
                   </Button>
-                  <Button variant="outline" className="w-full" onClick={() => window.location.href = '/register'}>
+                  <Button variant="outline" className="w-full" onClick={() => navigate({ to: '/register' })}>
                     {language === "ta" ? "பதிவு செய்" : "Register"}
                   </Button>
                 </div>
@@ -388,10 +389,10 @@ function Browse() {
                   {language === "ta" ? "நீங்கள் சேமித்த சுயவிவரங்களைக் காண தயவுசெய்து உங்கள் கணக்கில் உள்நுழையவும்." : "Please log in to view and manage your saved/bookmarked profiles."}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
-                  <Button className="w-full" onClick={() => window.location.href = '/login'}>
+                  <Button className="w-full" onClick={() => navigate({ to: '/login' })}>
                     {language === "ta" ? "உள்நுழை" : "Log In"}
                   </Button>
-                  <Button variant="outline" className="w-full" onClick={() => window.location.href = '/register'}>
+                  <Button variant="outline" className="w-full" onClick={() => navigate({ to: '/register' })}>
                     {language === "ta" ? "பதிவு செய்" : "Register"}
                   </Button>
                 </div>

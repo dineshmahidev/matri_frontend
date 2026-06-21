@@ -7,6 +7,7 @@ import { useLanguage } from "@/lib/language";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/theme";
 import { useUpgrade } from "@/lib/upgrade";
+import { useAuth } from "@/lib/auth";
 
 const NAV = [
   { to: "/", label: "Home", key: "home", icon: Home },
@@ -27,10 +28,12 @@ export function Navbar() {
   const logoSrc = resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png";
   const { openUpgrade } = useUpgrade();
 
+  const navigate = useNavigate();
+  const { logout: authLogout } = useAuth();
+
   const handleLogout = () => {
-    localStorage.removeItem("ungalkalyanam_token");
-    localStorage.removeItem("ungalkalyanam_user");
-    window.location.href = "/login";
+    authLogout();
+    navigate({ to: "/login" });
   };
 
   if (token) {

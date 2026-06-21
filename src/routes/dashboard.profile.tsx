@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { DashboardLayout } from "@/components/layout/AppLayouts";
 import { Button } from "@/components/ui/button";
-import { 
-  Camera, BadgeCheck, Loader2, Pencil, LogOut, MessageCircle, 
+import { Camera, BadgeCheck, Loader2, Pencil, LogOut, MessageCircle, 
   Eye, Heart as HeartIcon, X, ChevronLeft, ChevronRight, Trash2,
   Settings, Shield, CreditCard, HelpCircle, ChevronRight as ChevronRightIcon,
   Crown
@@ -23,6 +22,7 @@ export const Route = createFileRoute("/dashboard/profile")({
 
 function MyProfile() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { language } = useLanguage();
   const { openUpgrade } = useUpgrade();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -77,16 +77,17 @@ function MyProfile() {
     }
   });
 
-  const addPhotoMutation = useMutation({
+  const addGalleryMutation = useMutation({
     mutationFn: (formData: FormData) => {
-      return api.post("/profile/gallery", formData);
+      return api.post("/profile/gallery/bulk", formData);
     },
-    onSuccess: () => {
-      toast.success("Photo uploaded to gallery successfully!");
+    onSuccess: (res: any) => {
+      const count = res?.images?.length || 0;
+      toast.success(`${count} photo(s) uploaded to gallery successfully!`);
       queryClient.invalidateQueries({ queryKey: ["my-profile"] });
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to upload photo");
+      toast.error(err.message || "Failed to upload photos");
     }
   });
 
@@ -111,13 +112,23 @@ function MyProfile() {
     fileInputRef.current?.click();
   };
 
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const compressed = await compressImage(file);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploadingGallery(true);
+    try {
       const formData = new FormData();
-      formData.append("image", compressed);
-      addPhotoMutation.mutate(formData);
+      for (let i = 0; i < files.length; i++) {
+        const compressed = await compressImage(files[i]);
+        formData.append("images[]", compressed);
+      }
+      await addGalleryMutation.mutateAsync(formData);
+    } catch {
+      toast.error(language === "ta" ? "புகைப்படங்களைப் பதிவேற்ற முடியவில்லை" : "Failed to upload photos");
+    } finally {
+      setUploadingGallery(false);
     }
   };
 
@@ -158,12 +169,13 @@ function MyProfile() {
     <DashboardLayout>
       <div className="space-y-6 text-left animate-fade-in pb-10">
         
-        {/* Hidden File Input for uploading photo */}
+        {/* Hidden File Input for uploading gallery photos */}
         <input
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
           accept="image/*"
+          multiple
           className="hidden"
         />
 
@@ -407,9 +419,9 @@ function MyProfile() {
               size="sm" 
               className="text-xs shrink-0"
               onClick={handleAddPhotoClick}
-              disabled={addPhotoMutation.isPending}
+              disabled={uploadingGallery}
             >
-              {addPhotoMutation.isPending ? (
+              {uploadingGallery ? (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Camera className="mr-1.5 h-3.5 w-3.5" />
@@ -552,7 +564,7 @@ function MyProfile() {
             onClick={() => {
               localStorage.removeItem("ungalkalyanam_token");
               localStorage.removeItem("ungalkalyanam_user");
-              window.location.href = "/login";
+              navigate({ to: "/login" });
             }}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-50 text-red-600 p-4 font-semibold hover:bg-red-100 transition-colors cursor-pointer"
           >

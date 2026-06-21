@@ -302,9 +302,8 @@ function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="w-full max-w-[240px] rounded-2xl p-5 text-center"
+              className="w-full max-w-[240px] rounded-2xl p-5 text-center bg-white/80 dark:bg-card/80"
               style={{
-                background: "rgba(255,255,255,0.8)",
                 backdropFilter: "blur(12px)",
                 border: "1px solid rgba(232,63,123,0.15)",
                 boxShadow: "0 8px 32px rgba(232,63,123,0.08)",

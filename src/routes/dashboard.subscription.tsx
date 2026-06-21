@@ -103,6 +103,7 @@ function ManageSubscription() {
       const order = await api.post("/payments/create-order", {
         amount: plan.price,
         plan_id: plan.id,
+        notes: window.location.origin,
       });
 
       // 2. Initialize Razorpay Checkout
@@ -121,6 +122,7 @@ function ManageSubscription() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               plan_id: plan.id,
+              notes: window.location.origin,
             });
             toast.success("Payment successful! Your plan has been upgraded.");
             navigate({ to: "/dashboard" });
@@ -185,7 +187,10 @@ function ManageSubscription() {
             {isPremium ? (
               <p className="text-sm mt-2 opacity-80">{isTamil ? "அனைத்து பிரீமியம் அம்சங்களும் செயல்படுகின்றன" : "All premium features are active"}</p>
             ) : (
-              <p className="text-sm mt-2 opacity-80">{isTamil ? "மேம்படுத்தி அதிக பொருத்தங்களை பெறுங்கள்" : "Upgrade to unlock more matches"}</p>
+              <div className="text-sm mt-2 opacity-80 space-y-0.5">
+                <p>{isTamil ? "மேம்படுத்தி அதிக பொருத்தங்களை பெறுங்கள்" : "Upgrade to unlock more matches"}</p>
+                <p>{isTamil ? "3 புகைப்படங்களை மட்டுமே பதிவேற்ற முடியும்" : "Upload limit: 3 photos"}</p>
+              </div>
             )}
           </div>
         </motion.div>

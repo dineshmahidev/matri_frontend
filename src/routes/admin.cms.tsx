@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { 
   FileText, HelpCircle, Heart, Plus, Edit, Trash2, Loader2, Calendar, MapPin, 
   BookOpen, Clock, Upload, Type, Bold, Image as ImageIcon, Crown, Star, Check, X,
-  ShieldAlert, Bell, Layout
+  ShieldAlert, Bell, Layout, Lock, Unlock, Eye, EyeOff
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -26,6 +26,10 @@ function AdminCms() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("pages");
   const [settingsForm, setSettingsForm] = useState<any>({});
+  const [pgUnlockPassword, setPgUnlockPassword] = useState("");
+  const [pgUnlocked, setPgUnlocked] = useState(false);
+  const [pgShowUnlock, setPgShowUnlock] = useState(false);
+  const [pgShowSecret, setPgShowSecret] = useState(false);
 
   // --- Pages State ---
   const [pageModalOpen, setPageModalOpen] = useState(false);
@@ -169,6 +173,25 @@ function AdminCms() {
     },
     onError: (err: any) => toast.error(err.message || "Failed to update settings")
   });
+
+  const pgVerifyMutation = useMutation({
+    mutationFn: (password: string) => api.post("/admin/verify-password", { password }),
+    onSuccess: (res: any) => {
+      if (res.verified) {
+        setPgUnlocked(true);
+        toast.success("Payment settings unlocked");
+      } else {
+        toast.error(res.message || "Incorrect password");
+      }
+    },
+    onError: (err: any) => toast.error(err.message || "Incorrect password"),
+  });
+
+  const handlePgUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pgUnlockPassword) return;
+    pgVerifyMutation.mutate(pgUnlockPassword);
+  };
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -910,33 +933,73 @@ function AdminCms() {
                 </div>
                 
                 <div className="space-y-4 pt-4 border-t">
-                  <h3 className="font-semibold text-primary">Payment Gateway (Razorpay)</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Env vars (<code className="text-xs">RAZORPAY_KEY_ID</code>, <code className="text-xs">RAZORPAY_KEY_SECRET</code>) take priority.
-                    {settingsForm.razorpay_source === "env" && " Currently using .env credentials."}
-                    {settingsForm.razorpay_source === "database" && " Using database fallback."}
-                  </p>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label>Razorpay Key ID</Label>
-                      <Input
-                        value={settingsForm.razorpay_key_id || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, razorpay_key_id: e.target.value })}
-                        placeholder="rzp_test_..."
-                        disabled={settingsForm.razorpay_source === "env"}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Razorpay Key Secret</Label>
-                      <Input
-                        type="password"
-                        value={settingsForm.razorpay_key_secret || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, razorpay_key_secret: e.target.value })}
-                        placeholder={settingsForm.razorpay_key_secret_masked ? "•••••••• (leave to keep)" : "Enter secret"}
-                        disabled={settingsForm.razorpay_source === "env"}
-                      />
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-primary">Payment Gateway (Razorpay)</h3>
+                    {!pgUnlocked && !pgShowUnlock && (
+                      <Button type="button" variant="outline" size="sm" onClick={() => setPgShowUnlock(true)}>
+                        <Lock className="mr-1.5 h-4 w-4" /> Unlock
+                      </Button>
+                    )}
                   </div>
+
+                  {pgShowUnlock && !pgUnlocked && (
+                    <form onSubmit={handlePgUnlock} className="flex items-end gap-3 rounded-xl border bg-muted/30 p-4">
+                      <div className="flex-1 space-y-1">
+                        <Label htmlFor="cms-pg-unlock">Enter your password to modify payment settings</Label>
+                        <Input id="cms-pg-unlock" type="password" value={pgUnlockPassword} onChange={(e) => setPgUnlockPassword(e.target.value)} placeholder="Your admin password" autoFocus />
+                      </div>
+                      <Button type="submit" disabled={!pgUnlockPassword || pgVerifyMutation.isPending}>
+                        {pgVerifyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
+                        Unlock
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => { setPgShowUnlock(false); setPgUnlockPassword(""); }}>Cancel</Button>
+                    </form>
+                  )}
+
+                  {pgUnlocked && (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        Env vars (<code className="text-xs">RAZORPAY_KEY_ID</code>, <code className="text-xs">RAZORPAY_KEY_SECRET</code>) take priority.
+                        {settingsForm.razorpay_source === "env" && " Currently using .env credentials."}
+                        {settingsForm.razorpay_source === "database" && " Using database fallback."}
+                      </p>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label>Razorpay Key ID</Label>
+                          <Input
+                            value={settingsForm.razorpay_key_id || ""}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, razorpay_key_id: e.target.value })}
+                            placeholder="rzp_test_..."
+                            disabled={settingsForm.razorpay_source === "env"}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>Razorpay Key Secret</Label>
+                          <div className="relative">
+                            <Input
+                              type={pgShowSecret ? "text" : "password"}
+                              value={settingsForm.razorpay_key_secret || ""}
+                              onChange={(e) => setSettingsForm({ ...settingsForm, razorpay_key_secret: e.target.value })}
+                              placeholder={settingsForm.razorpay_key_secret_masked ? "•••••••• (leave to keep)" : "Enter secret"}
+                              disabled={settingsForm.razorpay_source === "env"}
+                            />
+                            <button type="button" onClick={() => setPgShowSecret(!pgShowSecret)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                              {pgShowSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => { setPgUnlocked(false); setPgShowUnlock(false); setPgUnlockPassword(""); }} className="text-muted-foreground">
+                          <Lock className="mr-1.5 h-4 w-4" /> Lock
+                        </Button>
+                      </div>
+                    </>
+                  )}
+
+                  {!pgUnlocked && !pgShowUnlock && (
+                    <p className="text-xs text-muted-foreground">Payment settings are locked. Click "Unlock" and enter your admin password to modify Razorpay keys.</p>
+                  )}
                 </div>
 
                 <div className="space-y-4 pt-4 border-t">
@@ -944,6 +1007,15 @@ function AdminCms() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5"><Label>Free Contact Quota</Label><Input type="number" value={settingsForm.free_contact_quota || ""} onChange={e => setSettingsForm({...settingsForm, free_contact_quota: e.target.value})} /></div>
                     <div className="space-y-1.5"><Label>Free Message Quota</Label><Input type="number" value={settingsForm.free_message_quota || ""} onChange={e => setSettingsForm({...settingsForm, free_message_quota: e.target.value})} /></div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="font-semibold text-primary">Credit Costs Per Action</h3>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="space-y-1.5"><Label>Interest Send Cost</Label><Input type="number" min="0" value={settingsForm.credit_cost_interest || "1"} onChange={e => setSettingsForm({...settingsForm, credit_cost_interest: e.target.value})} /><p className="text-xs text-muted-foreground">Credits deducted per interest sent</p></div>
+                    <div className="space-y-1.5"><Label>Profile Unlock Cost</Label><Input type="number" min="0" value={settingsForm.credit_cost_unlock || "5"} onChange={e => setSettingsForm({...settingsForm, credit_cost_unlock: e.target.value})} /><p className="text-xs text-muted-foreground">Credits deducted per contact unlock</p></div>
+                    <div className="space-y-1.5"><Label>Message Cost</Label><Input type="number" min="0" value={settingsForm.credit_cost_message || "1"} onChange={e => setSettingsForm({...settingsForm, credit_cost_message: e.target.value})} /><p className="text-xs text-muted-foreground">Message quota deducted per first message</p></div>
                   </div>
                 </div>
 <div className="pt-4 border-t flex justify-end">

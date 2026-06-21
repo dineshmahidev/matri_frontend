@@ -1,12 +1,13 @@
 import { useState, ReactNode } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useLanguage } from "@/lib/language";
 import { useTheme } from "@/lib/theme";
-import { Heart, LayoutDashboard, User, Bell, CreditCard, MessageCircle, MessageSquare, Bookmark, Send, Inbox, Crown, LogOut, Search, Menu, X, Globe, Users, Home } from "lucide-react";
+import { Heart, LayoutDashboard, User, Bell, CreditCard, MessageCircle, MessageSquare, Bookmark, Send, Inbox, Crown, LogOut, Search, Menu, X, Globe, Users, Home, Upload } from "lucide-react";
 import { MemberTopbar } from "./Navbar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { useUpgrade } from "@/lib/upgrade";
 
 const NAV = [
@@ -31,10 +32,12 @@ export function DashboardLayout({ children, hideMobileNav = false, noMargins = f
   const { openUpgrade } = useUpgrade();
   const logoSrc = resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png";
 
+  const navigate = useNavigate();
+  const { logout: authLogout } = useAuth();
+
   const handleLogout = () => {
-    localStorage.removeItem("ungalkalyanam_token");
-    localStorage.removeItem("ungalkalyanam_user");
-    window.location.href = "/login";
+    authLogout();
+    navigate({ to: "/login" });
   };
 
   return (
@@ -199,6 +202,7 @@ export function AdminLayout({ children, role = "Admin" }: { children: ReactNode;
     { to: "/admin/reports", label: "Reports", icon: LayoutDashboard },
     { to: "/admin/cms", label: "CMS", icon: Bookmark },
     { to: "/admin/support-tickets", label: "Support Tickets", icon: MessageSquare },
+    { to: "/admin/bulk-upload", label: "Bulk Upload", icon: Upload },
     { to: "/admin/edit-profile", label: "Edit Profile", icon: User },
   ];
   const STAFF = [
@@ -213,10 +217,12 @@ export function AdminLayout({ children, role = "Admin" }: { children: ReactNode;
   const photoUrl = profile?.photo;
   const userName = profile?.name;
 
+  const navigate = useNavigate();
+  const { logout: adminAuthLogout } = useAuth();
+
   const handleLogout = () => {
-    localStorage.removeItem("ungalkalyanam_token");
-    localStorage.removeItem("ungalkalyanam_user");
-    window.location.href = "/login";
+    adminAuthLogout();
+    navigate({ to: "/login" });
   };
 
   const SidebarContent = () => (

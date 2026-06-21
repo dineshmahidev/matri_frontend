@@ -174,7 +174,7 @@ function AdminPayments() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr><th className="p-4">ID</th><th className="p-4">Date</th><th className="p-4">Member</th><th className="p-4">Amount</th><th className="p-4">Status</th></tr>
+                  <tr><th className="p-4">ID</th><th className="p-4">Date</th><th className="p-4">Member</th><th className="p-4">Amount</th><th className="p-4">Status</th><th className="p-4">Notes</th></tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {payments.map((p) => (
@@ -184,6 +184,7 @@ function AdminPayments() {
                       <td className="p-4">{p.user?.name ?? "—"}</td>
                       <td className="p-4 font-semibold">₹{Number(p.amount || 0).toLocaleString()}</td>
                       <td className="p-4"><StatusPill s={p.status} /></td>
+                      <td className="p-4 text-xs text-muted-foreground max-w-[200px] truncate" title={p.notes || ""}>{p.notes || "—"}</td>
                     </tr>
                   ))}
                 </tbody>

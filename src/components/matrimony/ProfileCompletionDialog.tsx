@@ -81,15 +81,15 @@ export function ProfileCompletionDialog({
     },
   });
 
-  const addPhotoMutation = useMutation({
-    mutationFn: (formData: FormData) => api.post("/profile/gallery", formData),
+  const addGalleryMutation = useMutation({
+    mutationFn: (formData: FormData) => api.post("/profile/gallery/bulk", formData),
     onSuccess: (res: any) => {
-      const url = res?.image || res?.url;
-      if (url) setGalleryPhotos((prev) => [...prev, url]);
+      const urls = res?.images || [];
+      if (urls.length > 0) setGalleryPhotos((prev) => [...prev, ...urls]);
       queryClient.invalidateQueries({ queryKey: ["my-profile"] });
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to upload photo");
+      toast.error(err.message || "Failed to upload photos");
     },
   });
 
@@ -127,9 +127,10 @@ export function ProfileCompletionDialog({
   };
 
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (galleryPhotos.length >= maxGallery) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const remainingSlots = maxGallery - galleryPhotos.length;
+    if (remainingSlots <= 0) {
       toast.error(
         isTa
           ? `அதிகபட்சம் ${maxGallery} புகைப்படங்கள் மட்டுமே அனுமதிக்கப்படும்`
@@ -137,17 +138,22 @@ export function ProfileCompletionDialog({
       );
       return;
     }
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
     setUploadingGallery(true);
     try {
-      const compressed = await compressImage(file);
       const formData = new FormData();
-      formData.append("image", compressed);
-      const res = await addPhotoMutation.mutateAsync(formData);
-      const url = res?.image || res?.url || URL.createObjectURL(compressed);
-      setGalleryPhotos((prev) => [...prev, url]);
-      toast.success(isTa ? "புகைப்படம் பதிவேற்றப்பட்டது!" : "Photo uploaded!");
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const compressed = await compressImage(filesToUpload[i]);
+        formData.append("images[]", compressed);
+      }
+      const res = await addGalleryMutation.mutateAsync(formData);
+      const urls = res?.images || [];
+      if (urls.length > 0) {
+        setGalleryPhotos((prev) => [...prev, ...urls]);
+      }
+      toast.success(isTa ? "புகைப்படங்கள் பதிவேற்றப்பட்டன!" : "Gallery photos uploaded!");
     } catch {
-      toast.error(isTa ? "புகைப்படத்தைப் பதிவேற்ற முடியவில்லை" : "Failed to upload photo");
+      toast.error(isTa ? "புகைப்படங்களைப் பதிவேற்ற முடியவில்லை" : "Failed to upload gallery photos");
     } finally {
       setUploadingGallery(false);
     }
@@ -399,6 +405,7 @@ export function ProfileCompletionDialog({
                 ref={galleryInputRef}
                 onChange={handleGalleryUpload}
                 accept="image/*"
+                multiple
                 className="hidden"
               />
             </div>
