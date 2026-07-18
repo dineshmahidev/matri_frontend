@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Check, Crown, Sparkles, Loader2, MessageCircle, Eye, Heart, Brain } from "lucide-react";
+import { Check, Crown, Sparkles, Loader2, MessageCircle, Eye, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -165,10 +165,6 @@ function Pricing() {
                     <span className="font-bold">0</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-muted-foreground"><Brain className="h-4 w-4" /> AI Porutham</span>
-                    <span className="font-bold">—</span>
-                  </div>
-                  <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-muted-foreground">Photos</span>
                     <span className="font-bold">3</span>
                   </div>
@@ -216,10 +212,6 @@ function Pricing() {
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5 text-muted-foreground"><Heart className="h-4 w-4" /> Interest sends</span>
                       <span className="font-bold">{p.credits ?? "—"}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-muted-foreground"><Brain className="h-4 w-4" /> AI Porutham</span>
-                      <span className="font-bold">{p.features?.includes("AI Porutham matching") ? "Unlimited" : "—"}</span>
                     </div>
                   </div>
                 </div>

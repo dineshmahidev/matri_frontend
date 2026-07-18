@@ -43,7 +43,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RELIGIONS, CASTES, RELIGION_CASTE_MAP, OPTION_TRANSLATIONS } from "@/data/castes";
-import { RASIS, NAKSHATRAMS, RASI_NAKSHATRAM_MAP } from "@/data/astrology";
 import { EDUCATION_LEVELS, PROFESSIONS } from "@/data/education";
 
 export const Route = createFileRoute("/staff/users")({
@@ -67,7 +66,7 @@ function StaffUsers() {
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState("");
   const [dob, setDob] = useState("");
-  const [tob, setTob] = useState("");
+  // const [tob, setTob] = useState("");
   const [bio, setBio] = useState("");
   const [height, setHeight] = useState("");
   const [religion, setReligion] = useState("");
@@ -81,10 +80,9 @@ function StaffUsers() {
   const [maritalStatus, setMaritalStatus] = useState("");
   const [premium, setPremium] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState("free");
 
-  // Horoscope fields
-  const [rasi, setRasi] = useState("");
-  const [nakshatram, setNakshatram] = useState("");
+  // Horoscope fields (removed rasi/nakshatram)
 
   // Family fields
   const [father, setFather] = useState("");
@@ -116,6 +114,12 @@ function StaffUsers() {
 
   const users = usersResponse?.data || [];
   const meta = usersResponse?.meta;
+
+  const { data: plansData } = useQuery<any[]>({
+    queryKey: ["staff-plans-list"],
+    queryFn: () => api.get<any>("/admin/plans"),
+  });
+  const plans = plansData || [];
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,7 +154,6 @@ function StaffUsers() {
     setPhone(user.phone || "");
     setGender(user.gender || "male");
     setDob(user.dob || "");
-    setTob(user.tob || "");
     setBio(user.bio || "");
     setHeight(user.height || "");
     setReligion(user.religion || "");
@@ -164,8 +167,7 @@ function StaffUsers() {
     setMaritalStatus(user.maritalStatus || "Never Married");
     setPremium(!!user.premium);
     setVerified(!!user.verified);
-    setRasi(user.rasi || "");
-    setNakshatram(user.nakshatram || "");
+    setSelectedPlanId(user.planId ? String(user.planId) : "free");
     setFather(user.family?.father || "");
     setMother(user.family?.mother || "");
     setSiblings(user.family?.siblings || "");
@@ -192,7 +194,6 @@ function StaffUsers() {
         phone,
         gender,
         dob,
-        tob,
         bio,
         height,
         religion,
@@ -206,8 +207,7 @@ function StaffUsers() {
         maritalStatus,
         premium,
         verified,
-        rasi,
-        nakshatram,
+        planId: selectedPlanId === "free" ? null : Number(selectedPlanId),
         family: {
           father,
           mother,
@@ -498,15 +498,7 @@ function StaffUsers() {
                     onChange={(e) => setDob(e.target.value)} 
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-tob">Time of Birth</Label>
-                  <Input 
-                    id="edit-tob" 
-                    type="time" 
-                    value={tob} 
-                    onChange={(e) => setTob(e.target.value)} 
-                  />
-                </div>
+                {/* TOB field removed */}
               </div>
             </div>
 
@@ -527,6 +519,20 @@ function StaffUsers() {
                     checked={premium} 
                     onCheckedChange={setPremium} 
                   />
+                </div>
+                <div className="space-y-1.5 bg-card border p-3.5 rounded-xl shadow-sm">
+                  <Label htmlFor="edit-plan" className="text-xs font-semibold">Membership Plan</Label>
+                  <Select value={selectedPlanId} onValueChange={v => { setSelectedPlanId(v); setPremium(v !== "free") }}>
+                    <SelectTrigger id="edit-plan" className="h-9">
+                      <SelectValue placeholder="Select plan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="free">Free Plan (Basic)</SelectItem>
+                      {plans.map((p: any) => (
+                        <SelectItem key={p.id} value={String(p.id)}>{p.name} (₹{p.price} / {p.period})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center justify-between border-t pt-3">
                   <div className="space-y-0.5">
@@ -673,38 +679,7 @@ function StaffUsers() {
               </div>
             </div>
 
-            {/* Horoscope Details */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Horoscope Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-rasi">Rasi (Moon Sign)</Label>
-                  <Select value={rasi} onValueChange={(v) => { setRasi(v); setNakshatram(""); }}>
-                    <SelectTrigger id="edit-rasi">
-                      <SelectValue placeholder="Select Rasi" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RASIS.map((r) => (
-                        <SelectItem key={r.en} value={r.en}>{r.en}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-nakshatram">Nakshatram (Birth Star)</Label>
-                  <Select value={nakshatram} onValueChange={setNakshatram}>
-                    <SelectTrigger id="edit-nakshatram">
-                      <SelectValue placeholder="Select Nakshatram" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(rasi ? (RASI_NAKSHATRAM_MAP[rasi] || []) : NAKSHATRAMS.map(n => n.en)).map((nName: string) => (
-                        <SelectItem key={nName} value={nName}>{nName}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
+            {/* Horoscope Details (removed rasi/nakshatram) */}
 
             {/* Family Details */}
             <div className="space-y-4">

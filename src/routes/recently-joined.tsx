@@ -14,9 +14,25 @@ export const Route = createFileRoute("/recently-joined")({
 
 function RecentlyJoined() {
   const { language } = useLanguage();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('ungalkalyanam_token') : null;
+  const userRaw = typeof window !== 'undefined' ? localStorage.getItem('ungalkalyanam_user') : null;
+  
+  let oppositeGender: string | null = null;
+  try {
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    if (user?.gender) {
+      oppositeGender = user.gender.toLowerCase() === 'male' ? 'female' : 'male';
+    }
+  } catch {}
+
   const { data, isLoading } = useQuery<{ data: any[] }>({
-    queryKey: ["recently-joined-members"],
-    queryFn: () => api.get<{ data: any[] }>("/members/recently-joined"),
+    queryKey: ["recently-joined-members", oppositeGender],
+    queryFn: () => {
+      const url = oppositeGender 
+        ? `/members/recently-joined?gender=${oppositeGender}`
+        : "/members/recently-joined";
+      return api.get<{ data: any[] }>(url);
+    },
   });
 
   const members = data?.data || [];

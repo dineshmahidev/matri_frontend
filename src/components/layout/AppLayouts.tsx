@@ -2,13 +2,14 @@ import { useState, ReactNode } from "react";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useLanguage } from "@/lib/language";
 import { useTheme } from "@/lib/theme";
-import { Heart, LayoutDashboard, User, Bell, CreditCard, MessageCircle, MessageSquare, Bookmark, Send, Inbox, Crown, LogOut, Search, Menu, X, Globe, Users, Home, Upload } from "lucide-react";
+import { Heart, LayoutDashboard, User, Bell, CreditCard, MessageCircle, MessageSquare, Bookmark, Send, Inbox, Crown, LogOut, Search, Menu, X, Globe, Users, Home, Upload, Package, ShieldCheck, ChevronUp, ChevronDown, Bot, Ban, Eye, EyeOff } from "lucide-react";
 import { MemberTopbar } from "./Navbar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useUpgrade } from "@/lib/upgrade";
+import { getDashboardPath, ADMIN_ROLES } from "@/lib/route-guards";
 
 const NAV = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard, exact: true },
@@ -19,6 +20,9 @@ const NAV = [
   { to: "/saved", label: "Saved Profiles", icon: Bookmark },
   { to: "/interests-sent", label: "Interests Sent", icon: Send },
   { to: "/interests-received", label: "Interests Received", icon: Inbox },
+  { to: "/contact-requests-sent", label: "Requested Profiles", icon: Eye },
+  { to: "/contact-requests-received", label: "Received Requests", icon: EyeOff },
+  { to: "/dashboard/blocked-users", label: "Blocked Users", icon: Ban },
   { to: "/dashboard/payments", label: "Payments", icon: CreditCard },
   { to: "/dashboard/support-tickets", label: "Support Tickets", key: "supportTickets", icon: MessageSquare },
   { to: "/pricing", label: "Upgrade", icon: Crown, upgrade: true },
@@ -183,27 +187,76 @@ export function DashboardLayout({ children, hideMobileNav = false, noMargins = f
 export function AdminLayout({ children, role = "Admin" }: { children: ReactNode; role?: "Admin" | "Staff" }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
+    Users: true // Default open example
+  });
+
+  const toggleMenu = (label: string) => {
+    setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
+  };
+
   const { resolvedTheme } = useTheme();
   const logoSrc = resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png";
-  const profileEndpoint = role === "Admin" ? "/admin/profile" : "/staff/profile";
-  const profileKey = role === "Admin" ? ["admin-profile"] : ["staff-profile"];
+
+  // Determine actual role from auth context (more reliable than the prop)
+  const { user: authUser, logout: adminAuthLogout } = useAuth();
+  const actualRole = authUser?.role ?? (role === "Admin" ? "admin" : "staff");
+  const isManagerRole = actualRole === 'manager';
+  const isAdminPanelRole = ADMIN_ROLES.includes(actualRole as any);
+
+  // Panel label shown in sidebar
+  const panelLabel = actualRole === 'manager' ? 'Manager' : actualRole === 'staff' ? 'Staff' : 'Admin';
+
+  const profileEndpoint = isAdminPanelRole ? "/admin/profile" : "/staff/profile";
+  const profileKey = isAdminPanelRole ? ["admin-profile"] : ["staff-profile"];
   const { data: profile } = useQuery<any>({
     queryKey: profileKey,
     queryFn: () => api.get(profileEndpoint),
     retry: false,
   });
 
+  // Fetch manager permissions (empty for non-manager)
+  const { data: managerPerms } = useQuery<any>({
+    queryKey: ["manager-permissions"],
+    queryFn: () => api.get("/admin/manager-permissions"),
+    enabled: isManagerRole,
+    retry: false,
+  });
+
+  const perm = (key: string): boolean => {
+    if (!isManagerRole) return true; // admin/staff can see everything
+    if (!managerPerms) return false; // still loading
+    return managerPerms[key] !== false; // default true if not explicitly disabled
+  };
+
   const ADMIN = [
     { to: "/uk-control", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { to: "/uk-control/users", label: "Users", icon: User },
-    { to: "/uk-control/leads", label: "Leads", icon: Inbox },
-    { to: "/uk-control/staff", label: "Staff", icon: User },
-    { to: "/uk-control/payments", label: "Payments", icon: CreditCard },
-    { to: "/uk-control/reports", label: "Reports", icon: LayoutDashboard },
-    { to: "/uk-control/cms", label: "CMS", icon: Bookmark },
-    { to: "/uk-control/support-tickets", label: "Support Tickets", icon: MessageSquare },
-    { to: "/uk-control/bulk-upload", label: "Bulk Upload", icon: Upload },
+    ...(perm("users") ? [{
+      label: "Users & Members" as const,
+      icon: Users,
+      permission: "users" as const,
+      children: [
+        ...(perm("users") ? [{ to: "/uk-control/users", label: "All Members" as const }] : []),
+        ...(perm("users_bulk") ? [{ to: "/uk-control/bulk-upload", label: "Bulk User Add" as const }] : []),
+      ].filter(Boolean) as any,
+    }] : []),
+    ...(perm("leads") ? [{ to: "/uk-control/leads" as const, label: "Leads" as const, icon: Inbox }] : []),
+    ...(perm("staff") ? [{ to: "/uk-control/staff" as const, label: "Staff" as const, icon: User }] : []),
+    { 
+      label: "System Config",
+      icon: ShieldCheck,
+      children: [
+        ...(perm("packages") ? [{ to: "/uk-control/packages", label: "Packages" }] : []),
+        ...(!isManagerRole ? [{ to: "/uk-control/roles", label: "Roles & Permissions" }] : []),
+        ...(perm("cms") ? [{ to: "/uk-control/cms", label: "CMS" }] : []),
+        ...(perm("reference_data") ? [{ to: "/uk-control/reference-data", label: "Reference Data" }] : []),
+      ].filter(Boolean),
+    },
+    ...(perm("payments") ? [{ to: "/uk-control/payments" as const, label: "Payments" as const, icon: CreditCard }] : []),
+    ...(perm("reports") ? [{ to: "/uk-control/reports" as const, label: "Reports" as const, icon: LayoutDashboard }] : []),
+    ...(perm("support_tickets") ? [{ to: "/uk-control/support-tickets" as const, label: "Support Tickets" as const, icon: MessageSquare }] : []),
     { to: "/uk-control/edit-profile", label: "Edit Profile", icon: User },
+    ...(perm("maintenance") ? [{ to: "/uk-control/maintenance" as const, label: "Maintenance Mode" as const, icon: Bot }] : []),
   ];
   const STAFF = [
     { to: "/staff", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -213,12 +266,11 @@ export function AdminLayout({ children, role = "Admin" }: { children: ReactNode;
     { to: "/staff/create-user", label: "Create User", icon: User },
     { to: "/staff/edit-profile", label: "Edit Profile", icon: User },
   ];
-  const nav = role === "Admin" ? ADMIN : STAFF;
+  const nav = isAdminPanelRole ? ADMIN : STAFF;
   const photoUrl = profile?.photo;
   const userName = profile?.name;
 
   const navigate = useNavigate();
-  const { logout: adminAuthLogout } = useAuth();
 
   const handleLogout = () => {
     adminAuthLogout();
@@ -231,21 +283,64 @@ export function AdminLayout({ children, role = "Admin" }: { children: ReactNode;
         <Link to="/" className="flex items-center gap-2">
           <div>
             <img src={logoSrc} alt="Ungal Kalyanam" className="h-10 w-auto object-contain" />
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{role} Panel</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{panelLabel} Panel</p>
           </div>
         </Link>
         <button onClick={() => setShowMobileSidebar(false)} className="rounded-full p-1.5 hover:bg-muted lg:hidden">
           <X className="h-5 w-5 text-muted-foreground" />
         </button>
       </div>
-      <div className="mt-6 space-y-1 flex-1">
+      <div className="mt-6 space-y-1 flex-1 overflow-y-auto pr-2">
         {nav.map((n) => {
-          const active = n.exact ? path === n.to : path.startsWith(n.to);
-          const Icon = n.icon;
+          if (n.children) {
+            const isOpen = openMenus[n.label];
+            const Icon = n.icon;
+            // Check if any child is active
+            const isAnyChildActive = n.children.some(child => path === child.to || path.startsWith(child.to + '/'));
+            
+            return (
+              <div key={n.label} className="space-y-1">
+                <button 
+                  onClick={() => toggleMenu(n.label)}
+                  className={`w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                    isAnyChildActive ? "bg-primary/5 text-primary" : "text-foreground/75 hover:bg-sidebar-accent"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className="h-4 w-4" /> {n.label}
+                  </div>
+                  {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </button>
+                {isOpen && (
+                  <div className="pl-9 pr-2 space-y-1 mt-1">
+                    {n.children.map(child => {
+                      const isChildActive = path === child.to;
+                      return (
+                        <Link
+                          key={child.to}
+                          to={child.to}
+                          onClick={() => setShowMobileSidebar(false)}
+                          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                            isChildActive ? "bg-primary text-primary-foreground shadow-soft font-semibold" : "text-foreground/70 hover:text-foreground hover:bg-muted"
+                          }`}
+                        >
+                          <div className={`h-1.5 w-1.5 rounded-full ${isChildActive ? "bg-primary-foreground" : "border border-current"}`} />
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          const active = n.exact ? path === n.to : path.startsWith(n.to!);
+          const Icon = n.icon!;
           return (
             <Link 
               key={n.to} 
-              to={n.to} 
+              to={n.to!} 
               onClick={() => setShowMobileSidebar(false)}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                 active ? "bg-primary text-primary-foreground shadow-soft" : "text-foreground/75 hover:bg-sidebar-accent"
@@ -258,7 +353,7 @@ export function AdminLayout({ children, role = "Admin" }: { children: ReactNode;
       </div>
       <button 
         onClick={handleLogout} 
-        className="w-full text-left mt-auto flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/5"
+        className="w-full text-left mt-auto flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/5 shrink-0"
       >
         <LogOut className="h-4 w-4" /> Logout
       </button>
@@ -266,9 +361,9 @@ export function AdminLayout({ children, role = "Admin" }: { children: ReactNode;
   );
 
   return (
-    <div className="min-h-screen bg-muted/40">
+    <div className="min-h-screen bg-background">
       {/* Desktop Sidebar */}
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r bg-sidebar p-4 lg:flex lg:flex-col">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-border bg-sidebar p-4 lg:flex lg:flex-col shadow-soft">
         <SidebarContent />
       </aside>
 
@@ -279,7 +374,7 @@ export function AdminLayout({ children, role = "Admin" }: { children: ReactNode;
           <div onClick={() => setShowMobileSidebar(false)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           
           {/* Drawer Body */}
-          <div className="absolute inset-y-0 left-0 flex w-64 flex-col border-r bg-sidebar p-4 shadow-2xl">
+          <div className="absolute inset-y-0 left-0 flex w-64 flex-col border-r border-border bg-sidebar p-4 shadow-2xl">
             <SidebarContent />
           </div>
         </div>

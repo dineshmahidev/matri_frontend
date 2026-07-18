@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProfileCard } from "@/components/matrimony/ProfileCard";
@@ -30,6 +30,9 @@ function NotFoundIcon({ className }: { className?: string }) {
 
 export const Route = createFileRoute("/browse")({
   head: () => ({ meta: [{ title: "Browse Profiles — Ungalkalyanam" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: (search.tab as string) || "all",
+  }),
   component: Browse,
 });
 
@@ -97,17 +100,32 @@ function Browse() {
   const navigate = useNavigate();
   const { language, t } = useLanguage();
   const token = typeof window !== 'undefined' ? localStorage.getItem('ungalkalyanam_token') : null;
-  const [activeTab, setActiveTab] = useState<"all" | "recommended" | "saved" | "newjoin">("all");
+  const { tab: initialTab } = useSearch({ from: "/browse" });
+  const [activeTab, setActiveTab] = useState<"all" | "recommended" | "saved" | "newjoin">(
+    (initialTab as any) || "all"
+  );
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState<FilterType>({
-    gender: "",
-    ageMin: 18,
-    ageMax: 60,
-    religion: "",
-    caste: "",
-    motherTongue: "",
-    city: "",
-    education: "",
+  const [filters, setFilters] = useState<FilterType>(() => {
+    let initialGender = "Female";
+    if (token) {
+      const userRaw = typeof window !== 'undefined' ? localStorage.getItem('ungalkalyanam_user') : null;
+      try {
+        const u = userRaw ? JSON.parse(userRaw) : null;
+        if (u?.gender) {
+          initialGender = u.gender.toLowerCase() === 'male' ? 'Female' : 'Male';
+        }
+      } catch {}
+    }
+    return {
+      gender: initialGender,
+      ageMin: 18,
+      ageMax: 60,
+      religion: "",
+      caste: "",
+      motherTongue: "",
+      city: "",
+      education: "",
+    };
   });
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -116,22 +134,32 @@ function Browse() {
     queryFn: () => api.get<any>("/profile"),
     enabled: !!token,
   });
-  const myGender = myProfile?.data?.gender;
-  const loggedInGender = myGender ? (myGender.toLowerCase() === "male" ? "Male" : "Female") : null;
+  const loggedInGender = (() => {
+    if (!token) return null;
+    const userRaw = typeof window !== 'undefined' ? localStorage.getItem('ungalkalyanam_user') : null;
+    try {
+      const u = userRaw ? JSON.parse(userRaw) : null;
+      if (u?.gender) return u.gender.toLowerCase() === 'male' ? 'Male' : 'Female';
+    } catch {}
+    return myProfile?.data?.gender ? (myProfile.data.gender.toLowerCase() === "male" ? "Male" : "Female") : null;
+  })();
   const oppositeGender = loggedInGender === "Male" ? "Female" : loggedInGender === "Female" ? "Male" : null;
 
-  // Auto-set opposite-gender filter for logged-in users
+  // Auto-set opposite-gender filter only once on initial load
   const [genderInitialized, setGenderInitialized] = useState(false);
   useEffect(() => {
-    if (token && oppositeGender && !filters.gender) {
+    if (genderInitialized) return;
+    if (!token) {
+      setGenderInitialized(true);
+      return;
+    }
+    if (oppositeGender) {
       setFilters(prev => ({ ...prev, gender: oppositeGender }));
       setGenderInitialized(true);
-    }
-    if (token && myProfile?.data && !oppositeGender && !filters.gender) {
+    } else if (myProfile?.data) {
       setGenderInitialized(true);
     }
-    if (!token) setGenderInitialized(true);
-  }, [token, oppositeGender, myProfile]);
+  }, [token, oppositeGender, myProfile, genderInitialized]);
 
   const queryParams = new URLSearchParams();
   queryParams.append("page", page.toString());
@@ -151,10 +179,10 @@ function Browse() {
         return api.get<any>("/saved");
       }
       if (activeTab === "recommended") {
-        return api.get<any>(`/members/recommended?page=${page}`);
+        return api.get<any>(`/members/recommended?page=${page}&per_page=30`);
       }
       if (activeTab === "newjoin") {
-        return api.get<any>(`/members/recently-joined?page=${page}`);
+        return api.get<any>(`/members/recently-joined?page=${page}&per_page=30`);
       }
       return api.get<any>(`/members/browse?${queryParams.toString()}`);
     },
@@ -221,25 +249,25 @@ function Browse() {
         <div className="flex border-b overflow-x-auto scrollbar-hide">
           <button 
             className={`px-4 py-3 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'recommended' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-            onClick={() => { setActiveTab('recommended'); setPage(1); }}
+            onClick={() => { setPage(1); setActiveTab('recommended'); navigate({ to: '/browse', search: { tab: 'recommended' } }); }}
           >
             Recommended
           </button>
           <button 
             className={`px-4 py-3 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'all' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-            onClick={() => { setActiveTab('all'); setPage(1); }}
+            onClick={() => { setPage(1); setActiveTab('all'); navigate({ to: '/browse', search: { tab: 'all' } }); }}
           >
             All Members
           </button>
           <button 
             className={`px-4 py-3 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'saved' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-            onClick={() => { setActiveTab('saved'); setPage(1); }}
+            onClick={() => { setPage(1); setActiveTab('saved'); navigate({ to: '/browse', search: { tab: 'saved' } }); }}
           >
             Saved
           </button>
           <button 
             className={`px-4 py-3 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'newjoin' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-            onClick={() => { setActiveTab('newjoin'); setPage(1); }}
+            onClick={() => { setPage(1); setActiveTab('newjoin'); navigate({ to: '/browse', search: { tab: 'newjoin' } }); }}
           >
             {language === "ta" ? "புதிய இணைப்புகள்" : "New Join"}
           </button>
@@ -449,6 +477,18 @@ function Browse() {
                       </p>
                     </div>
                   )}
+                  {/* Pagination for newjoin */}
+                  {meta && meta.last_page > 1 && (
+                    <div className="mt-8">
+                      <Pagination
+                        currentPage={meta.current_page}
+                        lastPage={meta.last_page}
+                        total={meta.total}
+                        perPage={meta.per_page}
+                        onPageChange={setPage}
+                      />
+                    </div>
+                  )}
                 </div>
               </ErrorBoundary>
             )}
@@ -474,25 +514,6 @@ function Pagination({
   onPageChange: (page: number) => void;
 }) {
   const { language } = useLanguage();
-  const from = (currentPage - 1) * perPage + 1;
-  const to = Math.min(currentPage * perPage, total);
-
-  // Generate visible page numbers (max 5 at a time)
-  const getPageNumbers = (): (number | "...")[] => {
-    const pages: (number | "...")[] = [];
-    if (lastPage <= 5) {
-      for (let i = 1; i <= lastPage; i++) pages.push(i);
-    } else {
-      pages.push(1);
-      if (currentPage > 3) pages.push("...");
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(lastPage - 1, currentPage + 1);
-      for (let i = start; i <= end; i++) pages.push(i);
-      if (currentPage < lastPage - 2) pages.push("...");
-      pages.push(lastPage);
-    }
-    return pages;
-  };
 
   const handlePageChange = (newPage: number) => {
     onPageChange(newPage);
@@ -501,49 +522,30 @@ function Pagination({
   };
 
   return (
-    <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-      <p className="text-sm text-muted-foreground">
-        {language === "ta"
-          ? `${total} சுயவிவரங்களில் ${from}–${to} காட்டப்படுகிறது`
-          : `Showing ${from}–${to} of ${total} profiles`}
-      </p>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage <= 1}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border bg-card text-sm transition-colors hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
-          aria-label="Previous page"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
+    <div className="mt-8 flex justify-center items-center gap-4">
+      <button
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage <= 1}
+        className="inline-flex h-10 px-4 items-center justify-center gap-1.5 rounded-xl border bg-card text-sm font-semibold transition-colors hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+        aria-label="Previous page"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        {language === "ta" ? "முந்தைய" : "Previous"}
+      </button>
 
-        {getPageNumbers().map((p, idx) =>
-          p === "..." ? (
-            <span key={`ellipsis-${idx}`} className="px-2 text-sm text-muted-foreground">…</span>
-          ) : (
-            <button
-              key={p}
-              onClick={() => handlePageChange(p)}
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-colors ${
-                currentPage === p
-                  ? "gradient-rose text-white shadow-sm"
-                  : "border bg-card hover:bg-accent"
-              }`}
-            >
-              {p}
-            </button>
-          )
-        )}
+      <span className="text-xs text-muted-foreground font-medium">
+        {language === "ta" ? `பக்கம் ${currentPage} / ${lastPage}` : `Page ${currentPage} of ${lastPage}`}
+      </span>
 
-        <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage >= lastPage}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border bg-card text-sm transition-colors hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
-          aria-label="Next page"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
+      <button
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage >= lastPage}
+        className="inline-flex h-10 px-4 items-center justify-center gap-1.5 rounded-xl border bg-card text-sm font-semibold transition-colors hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+        aria-label="Next page"
+      >
+        {language === "ta" ? "அடுத்தது" : "Next"}
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </div>
   );
 }
@@ -569,25 +571,25 @@ function Filters({ filters, onChange, isLoggedIn }: { filters: FilterType; onCha
       <h3 className="font-display text-lg font-semibold">{t("filters")}</h3>
       
       {!isLoggedIn && (
-      <Section label={t("lookingFor")}>
-        <div className="flex gap-2">
-          {["Bride", "Groom"].map((x) => {
-            const val = x === "Bride" ? "Female" : "Male";
-            const active = filters.gender === val;
-            return (
-              <button 
-                key={x} 
-                onClick={() => handleGenderChange(val)}
-                className={`rounded-full border px-3 py-1.5 text-sm transition-all ${
-                  active ? "border-primary bg-primary/10 text-primary" : "hover:border-primary hover:text-primary"
-                }`}
-              >
-                {x === "Bride" ? t("bride") : t("groom")}
-              </button>
-            );
-          })}
-        </div>
-      </Section>
+        <Section label={t("lookingFor")}>
+          <div className="flex gap-2">
+            {["Bride", "Groom"].map((x) => {
+              const val = x === "Bride" ? "Female" : "Male";
+              const active = filters.gender === val;
+              return (
+                <button 
+                  key={x} 
+                  onClick={() => handleGenderChange(val)}
+                  className={`rounded-full border px-3 py-1.5 text-sm transition-all ${
+                    active ? "border-primary bg-primary/10 text-primary" : "hover:border-primary hover:text-primary"
+                  }`}
+                >
+                  {x === "Bride" ? t("bride") : t("groom")}
+                </button>
+              );
+            })}
+          </div>
+        </Section>
       )}
 
       <Section label={`${t("age")}: ${age[0]} – ${age[1]} yrs`}>

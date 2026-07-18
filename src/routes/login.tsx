@@ -56,9 +56,8 @@ function Login() {
         navigate({ to: "/uk-control" });
       } else if (user.role === "staff") {
         navigate({ to: "/staff" });
-      } else if (user.is_profile_completed === false) {
-        navigate({ to: "/complete-profile" });
       } else {
+        sessionStorage.removeItem("ungalkalyanam_profile_popup_dismissed");
         navigate({ to: "/dashboard" });
       }
     } catch (err: any) {

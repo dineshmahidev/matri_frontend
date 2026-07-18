@@ -1,9 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/layout/AppLayouts";
-import { Users, UserCheck, Crown, IndianRupee, UserPlus, Heart, TrendingUp, Loader2 } from "lucide-react";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area, CartesianGrid } from "recharts";
-import { useQuery } from "@tanstack/react-query";
+import { Box, Loader2, Power } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Users, UserCheck, Crown, IndianRupee, UserPlus, Heart, TrendingUp } from "lucide-react";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/uk-control/")({
   head: () => ({ meta: [{ title: "Admin Dashboard — Ungalkalyanam" }] }),
@@ -31,9 +34,25 @@ type DashboardData = {
 };
 
 function AdminDash() {
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery<DashboardData>({
     queryKey: ["admin-dashboard"],
     queryFn: () => api.get<DashboardData>("/admin/dashboard"),
+  });
+
+  const { data: refData, isLoading: refLoading } = useQuery({
+    queryKey: ["admin-reference-data-dash"],
+    queryFn: () => api.get("/admin/reference"),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ type, id }: { type: string; id: number }) =>
+      api.post(`/admin/reference/${type}/${id}/toggle`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-reference-data-dash"] });
+      toast.success("Toggled");
+    },
+    onError: () => toast.error("Toggle failed"),
   });
 
   if (isLoading || !data) {
@@ -139,6 +158,53 @@ function AdminDash() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div className="rounded-2xl border bg-card shadow-soft">
+          <div className="flex items-center justify-between border-b p-6">
+            <div className="flex items-center gap-2">
+              <Box className="h-5 w-5 text-primary" />
+              <div><p className="font-semibold">Reference Data</p><p className="text-xs text-muted-foreground">Manage dropdown options — deactivate without breaking existing user data</p></div>
+            </div>
+          </div>
+            {refLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+          ) : (
+            <div className="divide-y divide-border">
+              {[
+                { key: "religions", label: "Religions", color: "bg-blue-500" },
+                { key: "castes", label: "Castes", color: "bg-emerald-500" },
+                { key: "states", label: "States", color: "bg-violet-500" },
+                { key: "cities", label: "Cities", color: "bg-amber-500" },
+                { key: "blood_groups", label: "Blood Groups", color: "bg-rose-500" },
+              ].map(({ key, label, color }) => {
+                const items = refData?.[key] || [];
+                const active = items.filter((i: any) => i.is_active).length;
+                const total = items.length;
+                return (
+                  <div key={key} className="flex items-center justify-between px-6 py-3.5 hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
+                      <span className="text-sm font-medium">{label}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        <span className="font-medium text-foreground">{active}</span> / {total} active
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => window.location.href = "/uk-control/reference-data"}
+                      >
+                        <Power className="h-3 w-3" /> Manage
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </AdminLayout>

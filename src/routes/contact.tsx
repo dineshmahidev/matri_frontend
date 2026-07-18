@@ -68,8 +68,8 @@ function Contact() {
           ) : (
             <div className="mt-8 space-y-4">
               {[
-                { icon: Mail, t: "Email", d: settings?.contact_email || "support@ungalkalyanam.in" },
-                { icon: Phone, t: "Phone", d: settings?.contact_phone || "+91 80 4567 8900" },
+                { icon: Mail, t: "Email", d: settings?.contact_email || "ungalkalyanam.in@gmail.com" },
+                { icon: Phone, t: "Phone", d: settings?.contact_phone || "+91 9597558432" },
                 { icon: MapPin, t: "Office", d: settings?.contact_address_en || "8th Floor, Indiranagar, Bengaluru 560038" }
               ].map((item) => (
                 <div key={item.t} className="flex items-start gap-3">

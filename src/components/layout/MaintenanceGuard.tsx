@@ -25,11 +25,7 @@ export function MaintenanceGuard({ children }: { children: ReactNode }) {
   const onAdminPath = pathname.startsWith("/uk-control");
   const onLoginPath = pathname === "/login";
 
-  useEffect(() => {
-    if (inMaintenance && !isAdmin && !onAdminPath && !onLoginPath && !token) {
-      navigate({ to: "/login", search: { maintenance: "1" }, replace: true });
-    }
-  }, [inMaintenance, isAdmin, onAdminPath, onLoginPath, token, navigate]);
+
 
   if (isLoading) {
     return (
@@ -42,11 +38,11 @@ export function MaintenanceGuard({ children }: { children: ReactNode }) {
   if (inMaintenance && !isAdmin && !onAdminPath) {
     if (onLoginPath) return <>{children}</>;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="max-w-md text-center space-y-4">
-          <div className="text-6xl">🔧</div>
+      <div className="min-h-screen flex items-center justify-center bg-white p-4">
+        <div className="max-w-md text-center space-y-4 text-slate-900">
+          <img src="/website-under-maintenance.gif" alt="Website Under Maintenance" className="mx-auto w-full max-w-[300px] h-auto object-contain" />
           <h1 className="font-display text-2xl font-bold">{settings?.maintenance_headline || "Under Maintenance"}</h1>
-          <p className="text-muted-foreground">{settings?.maintenance_message || "We're working on something awesome. Please check back soon."}</p>
+          <p className="text-slate-600">{settings?.maintenance_message || "We're working on something awesome. Please check back soon."}</p>
           {settings?.maintenance_timer && (
             <p className="text-sm text-primary font-medium">
               Expected completion: {new Date(settings.maintenance_timer).toLocaleString()}

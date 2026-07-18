@@ -110,14 +110,14 @@ function HelpSupport() {
               <Phone className="h-5 w-5" />
             </div>
             <p className="text-sm font-semibold">{isTamil ? "அழைக்கவும்" : "Call Us"}</p>
-            <p className="text-xs text-muted-foreground truncate w-full text-center">{settings?.phone || '+91 99999 99999'}</p>
+            <p className="text-xs text-muted-foreground truncate w-full text-center">{settings?.phone || '+91 9597558432'}</p>
           </a>
-          <a href={`mailto:${settings?.email || 'support@ungalkalyanam.com'}`} className="flex flex-col items-center gap-2 p-4 rounded-2xl border bg-card shadow-soft hover:bg-muted/40 transition-colors text-center overflow-hidden">
+          <a href={`mailto:${settings?.email || 'ungalkalyanam.in@gmail.com'}`} className="flex flex-col items-center gap-2 p-4 rounded-2xl border bg-card shadow-soft hover:bg-muted/40 transition-colors text-center overflow-hidden">
             <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 shrink-0">
               <Mail className="h-5 w-5" />
             </div>
             <p className="text-sm font-semibold">{isTamil ? "மின்னஞ்சல்" : "Email Us"}</p>
-            <p className="text-xs text-muted-foreground truncate w-full text-center">{settings?.email || 'support@ungalkalyanam.com'}</p>
+            <p className="text-xs text-muted-foreground truncate w-full text-center">{settings?.email || 'ungalkalyanam.in@gmail.com'}</p>
           </a>
         </motion.div>
 

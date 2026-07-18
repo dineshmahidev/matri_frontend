@@ -56,10 +56,10 @@ export function Footer() {
             {/* Contact info */}
             <div className="mt-4 space-y-2">
               <a href={`tel:${settings?.footer_phone || '+919999999999'}`} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-[#D4AF37] transition-colors">
-                <Phone className="h-3.5 w-3.5 text-[#D4AF37]" /> {settings?.footer_phone || '+91 99999 99999'}
+                <Phone className="h-3.5 w-3.5 text-[#D4AF37]" /> {settings?.footer_phone || '+91 9597558432'}
               </a>
-              <a href={`mailto:${settings?.footer_email || 'support@ungalkalyanam.com'}`} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-[#D4AF37] transition-colors">
-                <Mail className="h-3.5 w-3.5 text-[#D4AF37]" /> {settings?.footer_email || 'support@ungalkalyanam.com'}
+              <a href={`mailto:${settings?.footer_email || 'ungalkalyanam.in@gmail.com'}`} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-[#D4AF37] transition-colors">
+                <Mail className="h-3.5 w-3.5 text-[#D4AF37]" /> {settings?.footer_email || 'ungalkalyanam.in@gmail.com'}
               </a>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <MapPin className="h-3.5 w-3.5 text-[#C2185B]" /> {isTamil ? (settings?.footer_address_ta || 'சென்னை, தமிழ்நாடு') : (settings?.footer_address_en || 'Chennai, Tamil Nadu')}
@@ -106,7 +106,6 @@ export function Footer() {
             <ul className="space-y-2.5 text-sm text-muted-foreground">
               {[
                 { to: "/browse", label: isTamil ? "உறுப்பினர்களை உலாவுங்கள்" : "Browse Members" },
-                { to: "/premium-members", label: isTamil ? "பிரீமியம் உறுப்பினர்கள்" : "Premium Members" },
                 { to: "/recently-joined", label: isTamil ? "சமீபத்தில் சேர்ந்தவர்கள்" : "Recently Joined" },
                 { to: "/search", label: isTamil ? "மேம்பட்ட தேடல்" : "Advanced Search" },
               ].map((link) => (
@@ -160,6 +159,7 @@ export function Footer() {
                 { to: "/faq", label: isTamil ? "அடிக்கடி கேட்கப்படும் கேள்விகள்" : "FAQs" },
                 { to: "/pricing", label: isTamil ? "விலை நிர்ணயம்" : "Pricing" },
                 { to: "/privacy", label: isTamil ? "தனியுரிமைக் கொள்கை" : "Privacy Policy" },
+                { to: "/refund", label: isTamil ? "பணத்தை திரும்பப் பெறும் கொள்கை" : "Refund Policy" },
                 { to: "/terms", label: isTamil ? "விதிமுறைகள்" : "Terms & Conditions" },
               ].map((link) => (
                 <li key={link.to}>

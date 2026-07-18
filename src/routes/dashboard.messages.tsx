@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/AppLayouts";
-import { api } from "@/lib/api";
+import { api, getImageUrl } from "@/lib/api";
 import { Search, ArrowLeft, Send, Paperclip, Smile, Loader2, MessageCircle, Heart, X, Check, Ban, Crown, Sparkles, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { useUpgrade } from "@/lib/upgrade";
@@ -312,9 +312,12 @@ function Messages() {
                       title="View Profile"
                     >
                       <img 
-                        src={chat.memberPhoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"} 
+                        src={getImageUrl(chat.memberPhoto) || (chat.memberGender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png")} 
                         className="h-12 w-12 rounded-full object-cover shadow-sm border border-muted" 
                         alt="" 
+                        onError={(e) => {
+                          e.currentTarget.src = chat.memberGender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png";
+                        }}
                       />
                     </div>
                     <div className="flex-1 overflow-hidden">
@@ -353,7 +356,14 @@ function Messages() {
                       onClick={() => navigate({ to: '/profile/$id', params: { id: interest.member.id } })}
                       title="View Profile"
                     >
-                      <img src={interest.member.photo || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"} className="h-12 w-12 rounded-full object-cover shadow-sm border border-muted" alt="" />
+                      <img 
+                        src={getImageUrl(interest.member.photo) || (interest.member.gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png")} 
+                        className="h-12 w-12 rounded-full object-cover shadow-sm border border-muted" 
+                        alt="" 
+                        onError={(e) => {
+                          e.currentTarget.src = interest.member.gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png";
+                        }}
+                      />
                     </button>
                     <div className="flex-1 overflow-hidden">
                       <div className="flex items-center justify-between mb-1">
@@ -398,7 +408,14 @@ function Messages() {
                         onClick={() => navigate({ to: '/profile/$id', params: { id: interest.member.id } })}
                         title="View Profile"
                       >
-                        <img src={interest.member.photo || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"} className="h-12 w-12 rounded-full object-cover shadow-sm border border-muted" alt="" />
+                        <img 
+                          src={getImageUrl(interest.member.photo) || (interest.member.gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png")} 
+                          className="h-12 w-12 rounded-full object-cover shadow-sm border border-muted" 
+                          alt="" 
+                          onError={(e) => {
+                            e.currentTarget.src = interest.member.gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png";
+                          }}
+                        />
                       </button>
                       <div className="flex-1 overflow-hidden">
                         <div className="flex items-center justify-between mb-1">
@@ -464,9 +481,12 @@ function Messages() {
                     >
                       <div className="relative">
                         <img 
-                          src={activeChat.memberPhoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"} 
+                          src={getImageUrl(activeChat.memberPhoto) || (activeChat.memberGender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png")} 
                           className="h-10 w-10 rounded-full object-cover border border-muted" 
                           alt="" 
+                          onError={(e) => {
+                            e.currentTarget.src = activeChat.memberGender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png";
+                          }}
                         />
                       </div>
                       <div>

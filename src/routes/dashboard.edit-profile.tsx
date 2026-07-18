@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { 
   Loader2, ArrowLeft, 
   FileText, User, MapPin, Briefcase, Users, Sparkles, Heart,
-  Calendar, Phone, Mail, Church, Moon, Star, Globe, BookOpen, DollarSign,
-  Ruler, Languages, Lock, Eye, EyeOff, Clock, Home, Droplet,
+  Calendar, Phone, Mail, Church, Globe, BookOpen, DollarSign,
+  Ruler, Languages, Lock, Eye, EyeOff, Home, Droplet,
   ImagePlus, X
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,9 +15,9 @@ import { toast } from "sonner";
 import { useLanguage } from "@/lib/language";
 import { compressImage } from "@/lib/compressImage";
 import { RELIGIONS, CASTES, MOTHER_TONGUES, RELIGION_CASTE_MAP, OPTION_TRANSLATIONS } from "@/data/castes";
-import { RASIS, NAKSHATRAMS, RASI_NAKSHATRAM_MAP } from "@/data/astrology";
 import { STATE_CITY_MAP } from "@/data/locations";
 import { EDUCATION_LEVELS, PROFESSIONS, ANNUAL_INCOME_RANGES } from "@/data/education";
+import { useReligions, useCastes, useStates, useCities } from "@/lib/useReferenceData";
 
 export const Route = createFileRoute("/dashboard/edit-profile")({
   head: () => ({ meta: [{ title: "Edit Profile — Ungalkalyanam" }] }),
@@ -36,24 +36,36 @@ function EditProfile() {
 
   const profile = profileResponse?.data ?? profileResponse;
 
+  // DB Reference hooks for edit profile dropdowns
+  const { data: dbReligions = [] } = useReligions();
+  const [religion, setReligion] = useState("");
+  const religionId = dbReligions.find((r) => r.name === religion)?.id ?? null;
+  const { data: dbCastes = [] } = useCastes(religionId);
+  const [community, setCommunity] = useState("");
+
+  const { data: dbStates = [] } = useStates();
+  const [state, setState] = useState("");
+  const stateId = dbStates.find((s) => s.name === state)?.id ?? null;
+  const { data: dbCities = [] } = useCities(stateId);
+  const [city, setCity] = useState("");
+
   // Local state for all fields
   const [name, setName] = useState("");
   const [maritalStatus, setMaritalStatus] = useState("");
   const [bio, setBio] = useState("");
-  const [religion, setReligion] = useState("");
-  const [community, setCommunity] = useState("");
   const [customCommunity, setCustomCommunity] = useState("");
   const [isCustomCommunity, setIsCustomCommunity] = useState(false);
   const [motherTongue, setMotherTongue] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
   const [profession, setProfession] = useState("");
   const [education, setEducation] = useState("");
   const [income, setIncome] = useState("");
   const [height, setHeight] = useState("");
   const [bloodGroup, setBloodGroup] = useState("");
   const [dob, setDob] = useState("");
-  const [tob, setTob] = useState("");
+
+  const [smokingStatus, setSmokingStatus] = useState("no");
+  const [drinkingStatus, setDrinkingStatus] = useState("no");
+  const [disability, setDisability] = useState("no");
 
   // Partner preferences state
   const [prefAgeRange, setPrefAgeRange] = useState("");
@@ -70,10 +82,6 @@ function EditProfile() {
   const [mother, setMother] = useState("");
   const [siblings, setSiblings] = useState("");
   const [familyStatus, setFamilyStatus] = useState("");
-
-  // Horoscope details state
-  const [rasi, setRasi] = useState("");
-  const [nakshatram, setNakshatram] = useState("");
 
   // Gallery state
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -96,17 +104,15 @@ function EditProfile() {
       setHeight(profile.height || "");
       setBloodGroup(profile.blood_group || "");
       setDob(profile.dob || "");
-      setTob(profile.tob || "");
+      setSmokingStatus(profile.smoking_status || "no");
+      setDrinkingStatus(profile.drinking_status || "no");
+      setDisability(profile.disability || "no");
 
       // Family details
       setFather(profile.family?.father || "");
       setMother(profile.family?.mother || "");
       setSiblings(profile.family?.siblings || "");
       setFamilyStatus(profile.family?.familyStatus || "Middle Class");
-
-      // Horoscope details
-      setRasi(profile.rasi || "");
-      setNakshatram(profile.nakshatram || "");
 
       // Partner preferences
       setPrefAgeRange(profile.partnerPrefs?.ageRange || "");
@@ -161,12 +167,7 @@ function EditProfile() {
 
   const handleStateChange = (selectedState: string) => {
     setState(selectedState);
-    const citiesForState = STATE_CITY_MAP[selectedState] || [];
-    if (citiesForState.length > 0) {
-      setCity(citiesForState[0]);
-    } else {
-      setCity("");
-    }
+    setCity("");
   };
 
   const addGalleryMutation = useMutation({
@@ -232,9 +233,9 @@ function EditProfile() {
       height,
       blood_group: bloodGroup,
       dob,
-      tob,
-      rasi,
-      nakshatram,
+      smoking_status: smokingStatus,
+      drinking_status: drinkingStatus,
+      disability,
       family: {
         father,
         mother,
@@ -276,8 +277,9 @@ function EditProfile() {
   }
 
   return (
-    <DashboardLayout>
-      <form onSubmit={handleSave} className="space-y-6 text-left animate-fade-in pb-10">
+    <DashboardLayout hideSidebar={true} noMargins={true}>
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <form onSubmit={handleSave} className="space-y-6 text-left animate-fade-in pb-10">
         <div className="flex items-center gap-4 mb-6 mt-4">
           <Link to="/dashboard/profile" className="grid h-10 w-10 place-items-center rounded-full bg-card border shadow-sm hover:bg-muted transition-colors">
             <ArrowLeft className="h-5 w-5" />
@@ -294,6 +296,15 @@ function EditProfile() {
           <div className="mt-5">
             <label className="block">
               <span className="mb-1.5 block text-xs font-medium text-muted-foreground"><FileText className="inline h-3.5 w-3.5 mr-1 -mt-0.5" style={{ color: "#E83F7B" }} />{language === "ta" ? "சுயவிவர விளக்கம் / பயோ" : "About / Bio"}</span>
+              <div className="mb-2">
+                <select className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-muted-foreground outline-none" value="" onChange={e => { if (e.target.value) setBio(e.target.value); }}>
+                  <option value="">{language === "ta" ? "வார்ப்புருவைத் தேர்ந்தெடுக்கவும்..." : "Choose a template..."}</option>
+                  <option value={language === "ta" ? "நான் எளிமையான, நேர்மையான மற்றும் அக்கறையுள்ள நபர். உறவுகளையும் மதிப்புகளையும் மதிக்கிறேன். என் வாழ்க்கையை பகிர்ந்து கொள்ள ஒரு அன்பான துணையை தேடுகிறேன்." : "I am a simple, honest and caring person. I believe in respecting relationships and values. Looking for a loving partner to spend my life with."}>{language === "ta" ? "எளிமையான & அக்கறையுள்ள" : "Simple & Caring"}</option>
+                  <option value={language === "ta" ? "நான் ஒரு புகழ்பெற்ற நிறுவனத்தில் பணிபுரியும் தொழில்முறை நபர். நான் குடும்ப சார்பு மற்றும் மரபுகளை மதிக்கிறேன். பயணம், வாசிப்பு மற்றும் புதிய உணவுகளை ஆராய்வதை ரசிக்கிறேன்." : "I am a professional working in a reputed company. I am family-oriented and value traditions. I enjoy traveling, reading, and exploring new cuisines."}>{language === "ta" ? "தொழில்முறை & குடும்ப சார்பு" : "Professional & Family-oriented"}</option>
+                  <option value={language === "ta" ? "நான் மகிழ்ச்சியான, நேர்மறையான மனநிலை கொண்ட நபர். இசை, திரைப்படங்கள் மற்றும் நண்பர்கள் மற்றும் குடும்பத்துடன் நேரம் செலவிட விரும்புகிறேன். பொருத்தமான துணையை தேடுகிறேன்." : "I am a fun-loving, cheerful person with a positive outlook on life. I love music, movies, and spending time with friends and family. Looking for a compatible partner."}>{language === "ta" ? "மகிழ்ச்சியான & மகிழ்ச்சியான" : "Fun-loving & Cheerful"}</option>
+                  <option value={language === "ta" ? "நான் நேர்மை, விசுவாசம் மற்றும் பரஸ்பர மரியாதைக்கு மேலாக மதிக்கிறேன். இதே மதிப்புகளை பகிர்ந்து கொள்ளும் மற்றும் ஒரு அழகான வாழ்க்கையை ஒன்றாக உருவாக்க தயாராக உள்ள வாழ்க்கை துணையை தேடுகிறேன்." : "I value honesty, loyalty, and mutual respect above all. I am looking for a life partner who shares similar values and is ready to build a beautiful life together."}>{language === "ta" ? "மதிப்புகள் சார்ந்த" : "Values-driven"}</option>
+                </select>
+              </div>
               <textarea 
                 rows={4}
                 className="w-full rounded-xl border bg-background p-4 text-sm" 
@@ -327,15 +338,6 @@ function EditProfile() {
                 className="h-11 w-full rounded-xl border bg-background px-4 text-sm" 
                 value={dob} 
                 onChange={(e) => setDob(e.target.value)}
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-muted-foreground"><Clock className="inline h-3.5 w-3.5 mr-1 -mt-0.5" style={{ color: "#E83F7B" }} />{language === "ta" ? "பிறந்த நேரம்" : "Time of Birth"}</span>
-              <input 
-                type="time"
-                className="h-11 w-full rounded-xl border bg-background px-4 text-sm" 
-                value={tob} 
-                onChange={(e) => setTob(e.target.value)}
               />
             </label>
             <label className="block">
@@ -387,6 +389,27 @@ function EditProfile() {
               </select>
             </label>
             <label className="block">
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{language === "ta" ? "புகைப்பிடிப்பவர்" : "Smoker"}</span>
+              <select className="h-11 w-full rounded-xl border bg-background px-4 text-sm" value={smokingStatus} onChange={(e) => setSmokingStatus(e.target.value)}>
+                <option value="no">{language === "ta" ? "இல்லை" : "No"}</option>
+                <option value="yes">{language === "ta" ? "ஆம்" : "Yes"}</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{language === "ta" ? "மது அருந்துபவர்" : "Drinker"}</span>
+              <select className="h-11 w-full rounded-xl border bg-background px-4 text-sm" value={drinkingStatus} onChange={(e) => setDrinkingStatus(e.target.value)}>
+                <option value="no">{language === "ta" ? "இல்லை" : "No"}</option>
+                <option value="yes">{language === "ta" ? "ஆம்" : "Yes"}</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{language === "ta" ? "ஊனமுற்றவர்" : "Disability"}</span>
+              <select className="h-11 w-full rounded-xl border bg-background px-4 text-sm" value={disability} onChange={(e) => setDisability(e.target.value)}>
+                <option value="no">{language === "ta" ? "இல்லை" : "No"}</option>
+                <option value="yes">{language === "ta" ? "ஆம்" : "Yes"}</option>
+              </select>
+            </label>
+            <label className="block">
               <span className="mb-1.5 block text-xs font-medium text-muted-foreground"><Church className="inline h-3.5 w-3.5 mr-1 -mt-0.5" style={{ color: "#E83F7B" }} />{t("religion")}</span>
               <select 
                 className="h-11 w-full rounded-xl border bg-background px-4 text-sm" 
@@ -394,7 +417,7 @@ function EditProfile() {
                 onChange={(e) => setReligion(e.target.value)}
               >
                 <option value="">{language === "ta" ? "மதத்தை தேர்ந்தெடுக்கவும்" : "Select Religion"}</option>
-                {RELIGIONS.map((r) => <option key={r} value={r}>{language === "ta" ? (OPTION_TRANSLATIONS[r] || r) : r}</option>)}
+                {dbReligions.map((r) => <option key={r.id} value={r.name}>{language === "ta" ? (OPTION_TRANSLATIONS[r.name] || r.name) : r.name}</option>)}
               </select>
             </label>
             <label className="block">
@@ -405,7 +428,7 @@ function EditProfile() {
                 onChange={(e) => handleCommunityChange(e.target.value)}
               >
                 <option value="">{language === "ta" ? "சாதியை தேர்ந்தெடுக்கவும்" : "Select Caste / Community"}</option>
-                {(religion ? (RELIGION_CASTE_MAP[religion] || ["Other"]) : CASTES).map((c) => <option key={c} value={c}>{language === "ta" ? (OPTION_TRANSLATIONS[c] || c) : c}</option>)}
+                {dbCastes.map((c) => <option key={c.id} value={c.name}>{language === "ta" ? (OPTION_TRANSLATIONS[c.name] || c.name) : c.name}</option>)}
               </select>
               {isCustomCommunity && (
                 <input 
@@ -431,53 +454,7 @@ function EditProfile() {
           </div>
         </div>
 
-        {/* 3. Horoscope (Rasi & Nakshatram) Section */}
-        <div className="rounded-3xl border bg-card p-6 shadow-soft">
-          <h3 className="font-display text-xl font-semibold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-pink-500 fill-pink-500" />
-            {language === "ta" ? "ஜாதக விபரம் (ராசி & நட்சத்திரம்)" : "Horoscope Details (Rasi & Nakshatram)"}
-          </h3>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-muted-foreground"><Moon className="inline h-3.5 w-3.5 mr-1 -mt-0.5" style={{ color: "#E83F7B" }} />{language === "ta" ? "ராசி" : "Rasi / Moon Sign"}</span>
-              <select 
-                className="h-11 w-full rounded-xl border bg-background px-4 text-sm" 
-                value={rasi}
-                onChange={(e) => {
-                  setRasi(e.target.value);
-                  setNakshatram("");
-                }}
-              >
-                <option value="">{language === "ta" ? "ராசியைத் தேர்ந்தெடுக்கவும்" : "Select Rasi"}</option>
-                {RASIS.map((r) => (
-                  <option key={r.en} value={r.en}>
-                    {language === "ta" ? r.ta : r.en}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-muted-foreground"><Star className="inline h-3.5 w-3.5 mr-1 -mt-0.5" style={{ color: "#E83F7B" }} />{language === "ta" ? "நட்சத்திரம்" : "Nakshatram / Birth Star"}</span>
-              <select 
-                className="h-11 w-full rounded-xl border bg-background px-4 text-sm" 
-                value={nakshatram}
-                onChange={(e) => setNakshatram(e.target.value)}
-              >
-                <option value="">{language === "ta" ? "நட்சத்திரத்தைத் தேர்ந்தெடுக்கவும்" : "Select Nakshatram"}</option>
-                {(rasi ? (RASI_NAKSHATRAM_MAP[rasi] || []) : NAKSHATRAMS.map(n => n.en)).map((nName) => {
-                  const nObj = NAKSHATRAMS.find(n => n.en === nName);
-                  return nObj ? (
-                    <option key={nObj.en} value={nObj.en}>
-                      {language === "ta" ? nObj.ta : nObj.en}
-                    </option>
-                  ) : null;
-                })}
-              </select>
-            </label>
-          </div>
-        </div>
-
-        {/* 4. Family Information Section */}
+        {/* 3. Family Information Section */}
         <div className="rounded-3xl border bg-card p-6 shadow-soft">
           <h3 className="font-display text-xl font-semibold flex items-center gap-2">
             <Users className="h-5 w-5 text-pink-500 fill-pink-500" />
@@ -538,8 +515,8 @@ function EditProfile() {
                 onChange={(e) => handleStateChange(e.target.value)}
               >
                 <option value="">Select State</option>
-                {Object.keys(STATE_CITY_MAP).map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                {dbStates.map((s) => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
                 ))}
               </select>
             </label>
@@ -552,8 +529,8 @@ function EditProfile() {
                 disabled={!state}
               >
                 <option value="">Select City</option>
-                {(STATE_CITY_MAP[state] || []).map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                {dbCities.map((c) => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
               </select>
             </label>
@@ -803,6 +780,7 @@ function EditProfile() {
           </Button>
         </div>
       </form>
-    </DashboardLayout>
-  );
+    </div>
+  </DashboardLayout>
+);
 }

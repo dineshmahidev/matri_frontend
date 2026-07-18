@@ -23,13 +23,19 @@ function AdminLeads() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<any>({});
   const [bulkStaffId, setBulkStaffId] = useState<string>("");
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [createdByFilter, setCreatedByFilter] = useState<string>("");
+  const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
+  const [newLead, setNewLead] = useState({ name: "", phone: "", email: "", source: "", status: "New" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const params = new URLSearchParams({ status: tab });
   if (staffFilter) params.set("assigned_to", staffFilter);
+  if (dateFilter !== "all") params.set("date_filter", dateFilter);
+  if (createdByFilter) params.set("created_by", createdByFilter);
 
   const { data, isLoading } = useQuery<any>({
-    queryKey: ["admin-leads", tab, staffFilter],
+    queryKey: ["admin-leads", tab, staffFilter, dateFilter, createdByFilter],
     queryFn: () => api.get<any>(`/admin/leads?${params.toString()}`),
   });
 
@@ -51,6 +57,12 @@ function AdminLeads() {
     mutationFn: (data: { ids: number[]; assigned_to: number }) => api.post("/admin/leads/bulk-assign", data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-leads"] }); setSelected(new Set()); setBulkStaffId(""); toast.success("Leads assigned"); },
     onError: (err: any) => toast.error(err.message || "Bulk assign failed"),
+  });
+
+  const createLeadMutation = useMutation({
+    mutationFn: (data: any) => api.post("/admin/leads", data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-leads"] }); setIsAddLeadModalOpen(false); setNewLead({ name: "", phone: "", email: "", source: "", status: "New" }); toast.success("Lead created"); },
+    onError: (err: any) => toast.error(err.message || "Failed to create lead"),
   });
 
   const importMutation = useMutation({
@@ -140,6 +152,7 @@ function AdminLeads() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h1 className="font-display text-3xl font-bold">Leads</h1><p className="text-sm text-muted-foreground">Manage, assign, import and export leads</p></div>
           <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => setIsAddLeadModalOpen(true)}>+ Add Lead</Button>
             <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
             <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importMutation.isPending}>
               <Upload className="mr-1.5 h-4 w-4" /> {importMutation.isPending ? "Importing..." : "Import CSV"}
@@ -190,11 +203,22 @@ function AdminLeads() {
             ))}
           </div>
           <select value={staffFilter} onChange={(e) => { setStaffFilter(e.target.value); setSelected(new Set()); }} className="h-9 rounded-md border border-input bg-background px-3 text-xs outline-none focus:border-primary cursor-pointer">
-            <option value="">All staff</option>
+            <option value="">All assigned</option>
             <option value="unassigned">Unassigned</option>
             {staff.map((s: any) => (
               <option key={s.staffId} value={String(s.staffId)}>{s.name}</option>
             ))}
+          </select>
+          <select value={createdByFilter} onChange={(e) => { setCreatedByFilter(e.target.value); setSelected(new Set()); }} className="h-9 rounded-md border border-input bg-background px-3 text-xs outline-none focus:border-primary cursor-pointer">
+            <option value="">All creators</option>
+            {staff.map((s: any) => (
+              <option key={s.staffId} value={String(s.staffId)}>Created by {s.name}</option>
+            ))}
+          </select>
+          <select value={dateFilter} onChange={(e) => { setDateFilter(e.target.value); setSelected(new Set()); }} className="h-9 rounded-md border border-input bg-background px-3 text-xs outline-none focus:border-primary cursor-pointer">
+            <option value="all">All time</option>
+            <option value="today">Today</option>
+            <option value="this_month">This Month</option>
           </select>
         </div>
 
@@ -219,6 +243,7 @@ function AdminLeads() {
                   <th className="p-3">Email</th>
                   <th className="p-3">Source</th>
                   <th className="p-3">Assigned</th>
+                  <th className="p-3">Created By</th>
                   <th className="p-3">Status</th>
                   <th className="p-3">Date</th>
                   <th className="p-3 text-right">Actions</th>
@@ -272,6 +297,13 @@ function AdminLeads() {
                           l.assigned_staff?.name ?? <span className="text-muted-foreground">—</span>
                         )}
                       </td>
+                      <td className="p-3 text-muted-foreground text-xs">
+                        {l.creator ? (
+                          <span>{l.creator.role === 'admin' ? 'Admin' : l.creator.name}</span>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </td>
                       <td className="p-3">
                         {isEditing ? (
                           <select value={editValues.status} onChange={(e) => setEditValues({ ...editValues, status: e.target.value })} className={STYLE.nativeSelect}>
@@ -318,6 +350,38 @@ function AdminLeads() {
             <div className="flex gap-2">
               <Button variant="outline" size="sm" disabled={data.meta.current_page <= 1} onClick={() => {/* pagination via queryKey update would need page state */}}>Previous</Button>
               <Button variant="outline" size="sm" disabled={data.meta.current_page >= data.meta.last_page} onClick={() => {/* pagination via queryKey update would need page state */}}>Next</Button>
+            </div>
+          </div>
+        )}
+
+        {isAddLeadModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+            <div className="w-full max-w-md rounded-2xl border bg-card shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">Add New Lead</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Name *</label>
+                  <input className={STYLE.input} value={newLead.name} onChange={(e) => setNewLead({ ...newLead, name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Phone *</label>
+                  <input className={STYLE.input} value={newLead.phone} onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Email</label>
+                  <input className={STYLE.input} type="email" value={newLead.email} onChange={(e) => setNewLead({ ...newLead, email: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Source</label>
+                  <input className={STYLE.input} placeholder="e.g. Website, Walk-in, Referral" value={newLead.source} onChange={(e) => setNewLead({ ...newLead, source: e.target.value })} />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsAddLeadModalOpen(false)}>Cancel</Button>
+                <Button onClick={() => createLeadMutation.mutate(newLead)} disabled={createLeadMutation.isPending || !newLead.name || !newLead.phone}>
+                  {createLeadMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Lead
+                </Button>
+              </div>
             </div>
           </div>
         )}

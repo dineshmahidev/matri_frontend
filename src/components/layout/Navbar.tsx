@@ -8,11 +8,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/theme";
 import { useUpgrade } from "@/lib/upgrade";
 import { useAuth } from "@/lib/auth";
+import { getDashboardPath } from "@/lib/route-guards";
 
 const NAV = [
   { to: "/", label: "Home", key: "home", icon: Home },
   { to: "/browse", label: "Browse", key: "browse", icon: Globe },
-  { to: "/premium-members", label: "Premium", key: "premium", icon: Sparkles },
   { to: "/pricing", label: "Pricing", key: "pricing", icon: CreditCard },
   { to: "/success-stories", label: "Success Stories", key: "successStories", icon: Heart },
   { to: "/blog", label: "Blog", key: "blog", icon: Newspaper },
@@ -22,14 +22,14 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { language, setLanguage, t } = useLanguage();
-  const token = typeof window !== "undefined" ? localStorage.getItem("ungalkalyanam_token") : null;
+  const { token, logout: authLogout, user } = useAuth();
+  const dashboardPath = getDashboardPath(user?.role ?? 'member');
   const [showDrawer, setShowDrawer] = useState(false);
   const { resolvedTheme } = useTheme();
   const logoSrc = resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png";
   const { openUpgrade } = useUpgrade();
 
   const navigate = useNavigate();
-  const { logout: authLogout } = useAuth();
 
   const handleLogout = () => {
     authLogout();
@@ -43,10 +43,10 @@ export function Navbar() {
 
         {/* Floating Mobile Bottom Navigation Bar */}
         <nav className="fixed bottom-4 left-4 right-4 z-40 flex h-16 items-center justify-around rounded-2xl border border-[rgba(212,175,55,0.20)] bg-card/90 px-3 py-1 shadow-glow backdrop-blur-md lg:hidden">
-          <Link to="/dashboard" className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
-            path === "/dashboard" ? "text-primary" : "text-muted-foreground"
+          <Link to={dashboardPath} className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
+            path.startsWith(dashboardPath) ? "text-primary" : "text-muted-foreground"
           }`}>
-            <LayoutDashboard className="h-5 w-5" fill={path === "/dashboard" ? "currentColor" : "none"} />
+            <LayoutDashboard className="h-5 w-5" fill={path.startsWith(dashboardPath) ? "currentColor" : "none"} />
             <span>Home</span>
           </Link>
           <Link to="/browse" className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
@@ -97,14 +97,18 @@ export function Navbar() {
                 </header>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-1.5 text-left">
-                  <Link to="/dashboard" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><LayoutDashboard className="h-4 w-4 text-[#D4AF37]" /> Home</Link>
-                  <Link to="/dashboard/profile" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><User className="h-4 w-4 text-[#D4AF37]" /> My Profile</Link>
-                  <Link to="/dashboard/messages" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><MessageCircle className="h-4 w-4 text-[#D4AF37]" /> Messages</Link>
-                  <Link to="/dashboard/notifications" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><Bell className="h-4 w-4 text-[#D4AF37]" /> Notifications</Link>
-                  <Link to="/saved" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><Bookmark className="h-4 w-4 text-[#D4AF37]" /> Saved Profiles</Link>
-                  <Link to="/interests-sent" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><Send className="h-4 w-4 text-[#D4AF37]" /> Interests Sent</Link>
-                  <Link to="/interests-received" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><Inbox className="h-4 w-4 text-[#D4AF37]" /> Interests Received</Link>
-                  <button onClick={() => { setShowDrawer(false); openUpgrade(); }} className="w-full text-left flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><Crown className="h-4 w-4 text-[#D4AF37]" /> Upgrade Premium</button>
+                  <Link to={dashboardPath} onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><LayoutDashboard className="h-4 w-4 text-[#D4AF37]" /> Dashboard</Link>
+                  {user?.role === 'member' && (
+                    <>
+                      <Link to="/dashboard/profile" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><User className="h-4 w-4 text-[#D4AF37]" /> My Profile</Link>
+                      <Link to="/dashboard/messages" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><MessageCircle className="h-4 w-4 text-[#D4AF37]" /> Messages</Link>
+                      <Link to="/dashboard/notifications" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><Bell className="h-4 w-4 text-[#D4AF37]" /> Notifications</Link>
+                      <Link to="/saved" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><Bookmark className="h-4 w-4 text-[#D4AF37]" /> Saved Profiles</Link>
+                      <Link to="/interests-sent" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><Send className="h-4 w-4 text-[#D4AF37]" /> Interests Sent</Link>
+                      <Link to="/interests-received" onClick={() => setShowDrawer(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><Inbox className="h-4 w-4 text-[#D4AF37]" /> Interests Received</Link>
+                      <button onClick={() => { setShowDrawer(false); openUpgrade(); }} className="w-full text-left flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"><Crown className="h-4 w-4 text-[#D4AF37]" /> Upgrade Premium</button>
+                    </>
+                  )}
 
                   <button
                     onClick={() => { setShowDrawer(false); handleLogout(); }}
@@ -244,6 +248,8 @@ export function MemberTopbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const logoSrc = resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png";
   const navigate = useNavigate();
   const [searchVal, setSearchVal] = useState("");
+  const { user } = useAuth();
+  const dashboardPath = getDashboardPath(user?.role ?? 'member');
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && searchVal.trim()) {
@@ -279,7 +285,7 @@ export function MemberTopbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
             <Link to="/dashboard/notifications"><Bell className="h-5 w-5" /></Link>
           </Button>
           <Button asChild size="sm" variant="outline" className="hidden sm:inline-flex border-[rgba(212,175,55,0.30)] hover:border-[#D4AF37] hover:text-[#D4AF37]">
-            <Link to="/dashboard">{t("dashboard")}</Link>
+            <Link to={dashboardPath}>{t("dashboard")}</Link>
           </Button>
           <button onClick={onOpenMenu} className="p-1.5 hover:bg-muted rounded-full transition-colors">
             <MoreVertical className="h-5 w-5 text-muted-foreground" />

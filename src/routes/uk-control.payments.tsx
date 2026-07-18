@@ -5,7 +5,8 @@ import { StatusPill } from "./uk-control.index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, CreditCard, Eye, EyeOff, Lock, Unlock } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, Save, CreditCard, Eye, EyeOff, Lock, Unlock, Search, ArrowUpDown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -14,6 +15,8 @@ export const Route = createFileRoute("/uk-control/payments")({
   head: () => ({ meta: [{ title: "Payments — Admin" }] }),
   component: AdminPayments,
 });
+
+const statusOptions = ["paid", "pending", "failed", "refunded"];
 
 function AdminPayments() {
   const queryClient = useQueryClient();
@@ -24,6 +27,12 @@ function AdminPayments() {
   const [unlockPassword, setUnlockPassword] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [showUnlockInput, setShowUnlockInput] = useState(false);
+  const [editPayment, setEditPayment] = useState<any>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editStatus, setEditStatus] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
 
   const { data, isLoading } = useQuery<{ data: any[] }>({
     queryKey: ["admin-payments"],
@@ -47,12 +56,8 @@ function AdminPayments() {
   const verifyMutation = useMutation({
     mutationFn: (password: string) => api.post("/admin/verify-password", { password }),
     onSuccess: (res: any) => {
-      if (res.verified) {
-        setUnlocked(true);
-        toast.success("Unlocked");
-      } else {
-        toast.error(res.message || "Incorrect password");
-      }
+      if (res.verified) { setUnlocked(true); toast.success("Unlocked"); }
+      else { toast.error(res.message || "Incorrect password"); }
     },
     onError: (err: any) => toast.error(err.message || "Incorrect password"),
   });
@@ -61,6 +66,12 @@ function AdminPayments() {
     mutationFn: (data: { settings: Record<string, string> }) => api.post("/admin/settings", data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-settings"] }); toast.success("Razorpay settings saved"); },
     onError: (err: any) => toast.error(err.message || "Failed to save settings"),
+  });
+
+  const updatePaymentMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/admin/payments/${id}`, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-payments"] }); toast.success("Payment updated"); setEditOpen(false); },
+    onError: (err: any) => toast.error(err.message || "Failed to update payment"),
   });
 
   const handleUnlock = (e: React.FormEvent) => {
@@ -73,7 +84,30 @@ function AdminPayments() {
     saveMutation.mutate({ settings: { razorpay_key_id: razorpayKey, razorpay_key_secret: razorpaySecret } });
   };
 
-  const payments = data?.data ?? [];
+  const openEdit = (p: any) => {
+    setEditPayment(p);
+    setEditStatus(p.status);
+    setEditNotes(p.notes || "");
+    setEditOpen(true);
+  };
+
+  const handleUpdatePayment = () => {
+    if (!editPayment) return;
+    updatePaymentMutation.mutate({ id: editPayment.id, data: { status: editStatus, notes: editNotes } });
+  };
+
+  let payments = data?.data ?? [];
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    payments = payments.filter((p) =>
+      p.invoice_id?.toLowerCase().includes(q) ||
+      p.user?.name?.toLowerCase().includes(q) ||
+      p.razorpay_payment_id?.toLowerCase().includes(q) ||
+      p.razorpay_order_id?.toLowerCase().includes(q)
+    );
+  }
+  if (sortDir === "asc") payments = [...payments].reverse();
+
   const totalPaid = payments
     .filter((p) => p.status === "paid")
     .reduce((sum, p) => sum + Number(p.amount || 0), 0);
@@ -96,7 +130,7 @@ function AdminPayments() {
           ))}
         </div>
 
-        {/* Razorpay Configuration — Locked by default */}
+        {/* Razorpay Configuration */}
         <div className="rounded-2xl border bg-card p-6 shadow-soft space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -110,7 +144,6 @@ function AdminPayments() {
             )}
           </div>
 
-          {/* Unlock prompt */}
           {showUnlockInput && !unlocked && (
             <form onSubmit={handleUnlock} className="flex items-end gap-3 rounded-xl border bg-muted/30 p-4">
               <div className="flex-1 space-y-1">
@@ -125,7 +158,6 @@ function AdminPayments() {
             </form>
           )}
 
-          {/* Razorpay form — only visible when unlocked */}
           {unlocked && (
             <>
               {settingsLoading ? (
@@ -166,6 +198,23 @@ function AdminPayments() {
 
         {/* Payments Table */}
         <div className="rounded-2xl border bg-card shadow-soft">
+          <div className="border-b p-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-lg font-bold">Payment Records</h2>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search invoice, member, or Razorpay ID..."
+                  className="h-9 w-56 pl-9 text-xs"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setSortDir(sortDir === "desc" ? "asc" : "desc")}>
+                <ArrowUpDown className="mr-1 h-3 w-3" /> {sortDir === "desc" ? "Newest" : "Oldest"}
+              </Button>
+            </div>
+          </div>
           {isLoading ? (
             <div className="flex h-48 items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -174,17 +223,34 @@ function AdminPayments() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr><th className="p-4">ID</th><th className="p-4">Date</th><th className="p-4">Member</th><th className="p-4">Amount</th><th className="p-4">Status</th><th className="p-4">Notes</th></tr>
+                  <tr>
+                    <th className="p-4">Invoice</th>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Member</th>
+                    <th className="p-4">Plan</th>
+                    <th className="p-4">Amount</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4">Razorpay ID</th>
+                    <th className="p-4">Notes</th>
+                    <th className="p-4"></th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {payments.map((p) => (
                     <tr key={p.id} className="hover:bg-muted/40">
-                      <td className="p-4 font-medium">{p.id}</td>
-                      <td className="p-4 text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString() : "—"}</td>
+                      <td className="p-4 font-medium">{p.invoice_id || `#${p.id}`}</td>
+                      <td className="p-4 text-muted-foreground whitespace-nowrap">{p.created_at ? new Date(p.created_at).toLocaleDateString() : "—"}</td>
                       <td className="p-4">{p.user?.name ?? "—"}</td>
-                      <td className="p-4 font-semibold">₹{Number(p.amount || 0).toLocaleString()}</td>
+                      <td className="p-4">{p.plan_label || "—"}</td>
+                      <td className="p-4 font-semibold whitespace-nowrap">₹{Number(p.amount || 0).toLocaleString()}</td>
                       <td className="p-4"><StatusPill s={p.status} /></td>
-                      <td className="p-4 text-xs text-muted-foreground max-w-[200px] truncate" title={p.notes || ""}>{p.notes || "—"}</td>
+                      <td className="p-4 font-mono text-xs max-w-[120px] truncate" title={p.razorpay_payment_id || ""}>{p.razorpay_payment_id || "—"}</td>
+                      <td className="p-4 text-xs text-muted-foreground max-w-[150px] truncate" title={p.notes || ""}>{p.notes || "—"}</td>
+                      <td className="p-4">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(p)}>
+                          Edit
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -193,6 +259,63 @@ function AdminPayments() {
           )}
         </div>
       </div>
+
+      {/* Edit Payment Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Payment — {editPayment?.invoice_id || `#${editPayment?.id}`}</DialogTitle>
+          </DialogHeader>
+          {editPayment && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Member</p>
+                  <p className="font-medium">{editPayment.user?.name || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Amount</p>
+                  <p className="font-bold">₹{Number(editPayment.amount || 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Razorpay Order ID</p>
+                  <p className="font-mono text-xs">{editPayment.razorpay_order_id || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Razorpay Payment ID</p>
+                  <p className="font-mono text-xs">{editPayment.razorpay_payment_id || "—"}</p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Status</Label>
+                <select
+                  className="field"
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                >
+                  {statusOptions.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Notes</Label>
+                <textarea
+                  className="field min-h-[80px]"
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Admin notes..."
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                <Button onClick={handleUpdatePayment} disabled={updatePaymentMutation.isPending}>
+                  {updatePaymentMutation.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }

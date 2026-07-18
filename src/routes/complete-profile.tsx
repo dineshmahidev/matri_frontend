@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { useLanguage } from "@/lib/language";
 import { compressImage } from "@/lib/compressImage";
 import { RELIGIONS, CASTES, MOTHER_TONGUES, RELIGION_CASTE_MAP, OPTION_TRANSLATIONS } from "@/data/castes";
-import { RASIS, NAKSHATRAMS, RASI_NAKSHATRAM_MAP } from "@/data/astrology";
 import { STATE_CITY_MAP } from "@/data/locations";
 import { EDUCATION_LEVELS, PROFESSIONS, ANNUAL_INCOME_RANGES } from "@/data/education";
 
@@ -52,7 +51,6 @@ function CompleteProfile() {
   const [bio, setBio] = useState("");
   const [name, setName] = useState("");
   const [dob, setDob] = useState("");
-  const [tob, setTob] = useState("");
   const [maritalStatus, setMaritalStatus] = useState("Never Married");
   const [height, setHeight] = useState("");
   const [bloodGroup, setBloodGroup] = useState("");
@@ -62,8 +60,6 @@ function CompleteProfile() {
   const [customCommunity, setCustomCommunity] = useState("");
   const [isCustomCommunity, setIsCustomCommunity] = useState(false);
   const [motherTongue, setMotherTongue] = useState("");
-  const [rasi, setRasi] = useState("");
-  const [nakshatram, setNakshatram] = useState("");
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
   const [education, setEducation] = useState("");
@@ -82,6 +78,10 @@ function CompleteProfile() {
   const [prefLocation, setPrefLocation] = useState("");
   const [prefBloodGroup, setPrefBloodGroup] = useState("");
 
+  const [smokingStatus, setSmokingStatus] = useState("no");
+  const [drinkingStatus, setDrinkingStatus] = useState("no");
+  const [disability, setDisability] = useState("no");
+
   useEffect(() => {
     if (profile) {
       if (profile.photo) setProfilePhoto(profile.photo);
@@ -89,7 +89,6 @@ function CompleteProfile() {
       setName(profile.name || "");
       setBio(profile.bio || "");
       setDob(profile.dob || "");
-      setTob(profile.tob || "");
       setMaritalStatus(profile.maritalStatus || "Never Married");
       setHeight(profile.height || "");
       setBloodGroup(profile.blood_group || "");
@@ -101,8 +100,9 @@ function CompleteProfile() {
       setProfession(profile.profession || "");
       setEducation(profile.education || "");
       setIncome(profile.income || "");
-      setRasi(profile.rasi || "");
-      setNakshatram(profile.nakshatram || "");
+      setSmokingStatus(profile.smoking_status || "no");
+      setDrinkingStatus(profile.drinking_status || "no");
+      setDisability(profile.disability || "no");
       setFather(profile.family?.father || "");
       setMother(profile.family?.mother || "");
       setSiblings(profile.family?.siblings || "");
@@ -134,7 +134,6 @@ function CompleteProfile() {
     if (name) data.name = name;
     if (bio) data.bio = bio;
     if (dob) data.dob = dob;
-    if (tob) data.tob = tob;
     if (maritalStatus) data.marital_status = maritalStatus;
     if (height) data.height = height;
     if (bloodGroup) data.blood_group = bloodGroup;
@@ -143,13 +142,14 @@ function CompleteProfile() {
     const finalCommunity = community === "Other" ? customCommunity : community;
     if (finalCommunity) data.community = finalCommunity;
     if (motherTongue) data.mother_tongue = motherTongue;
-    if (rasi) data.rasi = rasi;
-    if (nakshatram) data.nakshatram = nakshatram;
     if (state) data.state = state;
     if (city) data.city = city;
     if (education) data.education = education;
     if (profession) data.profession = profession;
     if (income) data.income = income;
+    if (smokingStatus) data.smoking_status = smokingStatus;
+    if (drinkingStatus) data.drinking_status = drinkingStatus;
+    if (disability) data.disability = disability;
     const fam: Record<string, string> = {};
     if (father) fam.father = father;
     if (mother) fam.mother = mother;
@@ -416,6 +416,15 @@ function CompleteProfile() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block sm:col-span-2">
                   <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label("About / Bio", "சுயவிவர விளக்கம்")}</span>
+                  <div className="mb-2">
+                    <select className="w-full rounded-xl border bg-background px-3 py-2 text-xs text-muted-foreground outline-none" value="" onChange={e => { if (e.target.value) setBio(e.target.value); }}>
+                      <option value="">{label("Choose a template...", "வார்ப்புருவைத் தேர்ந்தெடுக்கவும்...")}</option>
+                      <option value={label("I am a simple, honest and caring person. I believe in respecting relationships and values. Looking for a loving partner to spend my life with.", "நான் எளிமையான, நேர்மையான மற்றும் அக்கறையுள்ள நபர். உறவுகளையும் மதிப்புகளையும் மதிக்கிறேன். என் வாழ்க்கையை பகிர்ந்து கொள்ள ஒரு அன்பான துணையை தேடுகிறேன்.")}>{label("Simple & Caring", "எளிமையான & அக்கறையுள்ள")}</option>
+                      <option value={label("I am a professional working in a reputed company. I am family-oriented and value traditions. I enjoy traveling, reading, and exploring new cuisines.", "நான் ஒரு புகழ்பெற்ற நிறுவனத்தில் பணிபுரியும் தொழில்முறை நபர். நான் குடும்ப சார்பு மற்றும் மரபுகளை மதிக்கிறேன். பயணம், வாசிப்பு மற்றும் புதிய உணவுகளை ஆராய்வதை ரசிக்கிறேன்.")}>{label("Professional & Family-oriented", "தொழில்முறை & குடும்ப சார்பு")}</option>
+                      <option value={label("I am a fun-loving, cheerful person with a positive outlook on life. I love music, movies, and spending time with friends and family. Looking for a compatible partner.", "நான் மகிழ்ச்சியான, நேர்மறையான மனநிலை கொண்ட நபர். இசை, திரைப்படங்கள் மற்றும் நண்பர்கள் மற்றும் குடும்பத்துடன் நேரம் செலவிட விரும்புகிறேன். பொருத்தமான துணையை தேடுகிறேன்.")}>{label("Fun-loving & Cheerful", "மகிழ்ச்சியான & மகிழ்ச்சியான")}</option>
+                      <option value={label("I value honesty, loyalty, and mutual respect above all. I am looking for a life partner who shares similar values and is ready to build a beautiful life together.", "நான் நேர்மை, விசுவாசம் மற்றும் பரஸ்பர மரியாதைக்கு மேலாக மதிக்கிறேன். இதே மதிப்புகளை பகிர்ந்து கொள்ளும் மற்றும் ஒரு அழகான வாழ்க்கையை ஒன்றாக உருவாக்க தயாராக உள்ள வாழ்க்கை துணையை தேடுகிறேன்.")}>{label("Values-driven", "மதிப்புகள் சார்ந்த")}</option>
+                    </select>
+                  </div>
                   <textarea rows={3} className="w-full rounded-xl border bg-background p-4 text-sm outline-none focus:border-primary" placeholder={label("Write about yourself...", "உங்களைப் பற்றி எழுதுங்கள்...")} value={bio} onChange={e => setBio(e.target.value)} />
                 </label>
                 <label className="block">
@@ -425,10 +434,6 @@ function CompleteProfile() {
                 <label className="block">
                   <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label("Date of Birth", "பிறந்த தேதி")}</span>
                   <input type="date" className={inpCls} value={dob} onChange={e => setDob(e.target.value)} />
-                </label>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label("Time of Birth", "பிறந்த நேரம்")}</span>
-                  <input type="time" className={inpCls} value={tob} onChange={e => setTob(e.target.value)} />
                 </label>
               </div>
             </div>
@@ -469,6 +474,27 @@ function CompleteProfile() {
                     {[label("Fair", "வெள்ளை"), label("Wheatish", "கோதுமை நிறம்"), label("Dusky", "கருத்த"), label("Dark", "கறுப்பு")].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label("Smoker", "புகைப்பிடிப்பவர்")}</span>
+                  <select className={selCls} value={smokingStatus} onChange={e => setSmokingStatus(e.target.value)}>
+                    <option value="no">{label("No", "இல்லை")}</option>
+                    <option value="yes">{label("Yes", "ஆம்")}</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label("Drinker", "மது அருந்துபவர்")}</span>
+                  <select className={selCls} value={drinkingStatus} onChange={e => setDrinkingStatus(e.target.value)}>
+                    <option value="no">{label("No", "இல்லை")}</option>
+                    <option value="yes">{label("Yes", "ஆம்")}</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label("Disability", "ஊனமுற்றவர்")}</span>
+                  <select className={selCls} value={disability} onChange={e => setDisability(e.target.value)}>
+                    <option value="no">{label("No", "இல்லை")}</option>
+                    <option value="yes">{label("Yes", "ஆம்")}</option>
+                  </select>
+                </label>
               </div>
             </div>
           )}
@@ -498,23 +524,6 @@ function CompleteProfile() {
                   <select className={selCls} value={motherTongue} onChange={e => setMotherTongue(e.target.value)}>
                     <option value="">{label("Select", "தேர்ந்தெடுக்கவும்")}</option>
                     {MOTHER_TONGUES.map(l => <option key={l} value={l}>{isTa ? (OPTION_TRANSLATIONS[l] || l) : l}</option>)}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label("Rasi / Moon Sign", "ராசி")}</span>
-                  <select className={selCls} value={rasi} onChange={e => { setRasi(e.target.value); setNakshatram(""); }}>
-                    <option value="">{label("Select Rasi", "ராசியைத் தேர்ந்தெடுக்கவும்")}</option>
-                    {RASIS.map(r => <option key={r.en} value={r.en}>{isTa ? r.ta : r.en}</option>)}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label("Nakshatram / Birth Star", "நட்சத்திரம்")}</span>
-                  <select className={selCls} value={nakshatram} onChange={e => setNakshatram(e.target.value)}>
-                    <option value="">{label("Select Nakshatram", "நட்சத்திரத்தைத் தேர்ந்தெடுக்கவும்")}</option>
-                    {(rasi ? (RASI_NAKSHATRAM_MAP[rasi] || []) : NAKSHATRAMS.map(n => n.en)).map(nName => {
-                      const nObj = NAKSHATRAMS.find(n => n.en === nName);
-                      return nObj ? <option key={nObj.en} value={nObj.en}>{isTa ? nObj.ta : nObj.en}</option> : null;
-                    })}
                   </select>
                 </label>
               </div>
@@ -601,7 +610,7 @@ function CompleteProfile() {
                   { l: label("Age Range", "வயது வரம்பு"), v: prefAgeRange, s: setPrefAgeRange, o: ["18-25","25-30","30-35","35-40","40-45","45-50","50+"] },
                   { l: label("Height Range", "உயரம் வரம்பு"), v: prefHeightRange, s: setPrefHeightRange, o: ["4ft-5ft","5ft-5ft6in","5ft6in-6ft","6ft+"] },
                   { l: label("Religion", "மதம்"), v: prefReligion, s: setPrefReligion, o: RELIGIONS },
-                  { l: label("Community", "சமூகம்"), v: prefCommunity, s: setPrefCommunity, o: [] },
+                  { l: label("Community", "சமூகம்"), v: prefCommunity, s: setPrefCommunity, o: CASTES },
                   { l: label("Education", "கல்வி"), v: prefEducation, s: setPrefEducation, o: EDUCATION_LEVELS },
                   { l: label("Profession", "தொழில்"), v: prefProfession, s: setPrefProfession, o: PROFESSIONS },
                   { l: label("Location", "இருப்பிடம்"), v: prefLocation, s: setPrefLocation, o: Object.keys(STATE_CITY_MAP) },

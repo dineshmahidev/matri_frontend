@@ -16,6 +16,7 @@ import { Route as StaffRouteImport } from './routes/staff'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SavedRouteImport } from './routes/saved'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as RefundRouteImport } from './routes/refund'
 import { Route as RecentlyJoinedRouteImport } from './routes/recently-joined'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -27,6 +28,8 @@ import { Route as InterestsReceivedRouteImport } from './routes/interests-receiv
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ContactRequestsSentRouteImport } from './routes/contact-requests-sent'
+import { Route as ContactRequestsReceivedRouteImport } from './routes/contact-requests-received'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CompleteProfileRouteImport } from './routes/complete-profile'
 import { Route as BrowseRouteImport } from './routes/browse'
@@ -39,8 +42,13 @@ import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as UkControlUsersRouteImport } from './routes/uk-control.users'
 import { Route as UkControlSupportTicketsRouteImport } from './routes/uk-control.support-tickets'
 import { Route as UkControlStaffRouteImport } from './routes/uk-control.staff'
+import { Route as UkControlRolesRouteImport } from './routes/uk-control.roles'
+import { Route as UkControlRoleEditRouteImport } from './routes/uk-control.role-edit'
 import { Route as UkControlReportsRouteImport } from './routes/uk-control.reports'
+import { Route as UkControlReferenceDataRouteImport } from './routes/uk-control.reference-data'
 import { Route as UkControlPaymentsRouteImport } from './routes/uk-control.payments'
+import { Route as UkControlPackagesRouteImport } from './routes/uk-control.packages'
+import { Route as UkControlMaintenanceRouteImport } from './routes/uk-control.maintenance'
 import { Route as UkControlLeadsRouteImport } from './routes/uk-control.leads'
 import { Route as UkControlEditProfileRouteImport } from './routes/uk-control.edit-profile'
 import { Route as UkControlCmsRouteImport } from './routes/uk-control.cms'
@@ -60,10 +68,10 @@ import { Route as DashboardPaymentsRouteImport } from './routes/dashboard.paymen
 import { Route as DashboardNotificationsRouteImport } from './routes/dashboard.notifications'
 import { Route as DashboardMessagesRouteImport } from './routes/dashboard.messages'
 import { Route as DashboardEditProfileRouteImport } from './routes/dashboard.edit-profile'
+import { Route as DashboardBlockedUsersRouteImport } from './routes/dashboard.blocked-users'
 import { Route as BlogSlugRouteImport } from './routes/blog_.$slug'
 import { Route as UkControlStaffIdRouteImport } from './routes/uk-control.staff.$id'
 import { Route as StaffLeadIdRouteImport } from './routes/staff.lead.$id'
-import { Route as ProfileIdPoruthamRouteImport } from './routes/profile.$id.porutham'
 import { Route as DashboardSupportTicketsIdRouteImport } from './routes/dashboard.support-tickets.$id'
 
 const UkControlRoute = UkControlRouteImport.update({
@@ -99,6 +107,11 @@ const SavedRoute = SavedRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundRoute = RefundRouteImport.update({
+  id: '/refund',
+  path: '/refund',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecentlyJoinedRoute = RecentlyJoinedRouteImport.update({
@@ -154,6 +167,16 @@ const FaqRoute = FaqRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRequestsSentRoute = ContactRequestsSentRouteImport.update({
+  id: '/contact-requests-sent',
+  path: '/contact-requests-sent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRequestsReceivedRoute = ContactRequestsReceivedRouteImport.update({
+  id: '/contact-requests-received',
+  path: '/contact-requests-received',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -216,14 +239,39 @@ const UkControlStaffRoute = UkControlStaffRouteImport.update({
   path: '/staff',
   getParentRoute: () => UkControlRoute,
 } as any)
+const UkControlRolesRoute = UkControlRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => UkControlRoute,
+} as any)
+const UkControlRoleEditRoute = UkControlRoleEditRouteImport.update({
+  id: '/role-edit',
+  path: '/role-edit',
+  getParentRoute: () => UkControlRoute,
+} as any)
 const UkControlReportsRoute = UkControlReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
   getParentRoute: () => UkControlRoute,
 } as any)
+const UkControlReferenceDataRoute = UkControlReferenceDataRouteImport.update({
+  id: '/reference-data',
+  path: '/reference-data',
+  getParentRoute: () => UkControlRoute,
+} as any)
 const UkControlPaymentsRoute = UkControlPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
+  getParentRoute: () => UkControlRoute,
+} as any)
+const UkControlPackagesRoute = UkControlPackagesRouteImport.update({
+  id: '/packages',
+  path: '/packages',
+  getParentRoute: () => UkControlRoute,
+} as any)
+const UkControlMaintenanceRoute = UkControlMaintenanceRouteImport.update({
+  id: '/maintenance',
+  path: '/maintenance',
   getParentRoute: () => UkControlRoute,
 } as any)
 const UkControlLeadsRoute = UkControlLeadsRouteImport.update({
@@ -321,6 +369,11 @@ const DashboardEditProfileRoute = DashboardEditProfileRouteImport.update({
   path: '/edit-profile',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardBlockedUsersRoute = DashboardBlockedUsersRouteImport.update({
+  id: '/blocked-users',
+  path: '/blocked-users',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/blog_/$slug',
   path: '/blog/$slug',
@@ -336,11 +389,6 @@ const StaffLeadIdRoute = StaffLeadIdRouteImport.update({
   path: '/lead/$id',
   getParentRoute: () => StaffRoute,
 } as any)
-const ProfileIdPoruthamRoute = ProfileIdPoruthamRouteImport.update({
-  id: '/porutham',
-  path: '/porutham',
-  getParentRoute: () => ProfileIdRoute,
-} as any)
 const DashboardSupportTicketsIdRoute =
   DashboardSupportTicketsIdRouteImport.update({
     id: '/$id',
@@ -354,6 +402,8 @@ export interface FileRoutesByFullPath {
   '/browse': typeof BrowseRoute
   '/complete-profile': typeof CompleteProfileRoute
   '/contact': typeof ContactRoute
+  '/contact-requests-received': typeof ContactRequestsReceivedRoute
+  '/contact-requests-sent': typeof ContactRequestsSentRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/faq': typeof FaqRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -365,6 +415,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/recently-joined': typeof RecentlyJoinedRoute
+  '/refund': typeof RefundRoute
   '/register': typeof RegisterRoute
   '/saved': typeof SavedRoute
   '/search': typeof SearchRoute
@@ -373,6 +424,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/uk-control': typeof UkControlRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
+  '/dashboard/blocked-users': typeof DashboardBlockedUsersRoute
   '/dashboard/edit-profile': typeof DashboardEditProfileRoute
   '/dashboard/messages': typeof DashboardMessagesRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
@@ -382,7 +434,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/subscription': typeof DashboardSubscriptionRoute
   '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard/support-tickets': typeof DashboardSupportTicketsRouteWithChildren
-  '/profile/$id': typeof ProfileIdRouteWithChildren
+  '/profile/$id': typeof ProfileIdRoute
   '/staff/create-user': typeof StaffCreateUserRoute
   '/staff/edit-profile': typeof StaffEditProfileRoute
   '/staff/leads': typeof StaffLeadsRoute
@@ -392,8 +444,13 @@ export interface FileRoutesByFullPath {
   '/uk-control/cms': typeof UkControlCmsRoute
   '/uk-control/edit-profile': typeof UkControlEditProfileRoute
   '/uk-control/leads': typeof UkControlLeadsRoute
+  '/uk-control/maintenance': typeof UkControlMaintenanceRoute
+  '/uk-control/packages': typeof UkControlPackagesRoute
   '/uk-control/payments': typeof UkControlPaymentsRoute
+  '/uk-control/reference-data': typeof UkControlReferenceDataRoute
   '/uk-control/reports': typeof UkControlReportsRoute
+  '/uk-control/role-edit': typeof UkControlRoleEditRoute
+  '/uk-control/roles': typeof UkControlRolesRoute
   '/uk-control/staff': typeof UkControlStaffRouteWithChildren
   '/uk-control/support-tickets': typeof UkControlSupportTicketsRoute
   '/uk-control/users': typeof UkControlUsersRoute
@@ -402,7 +459,6 @@ export interface FileRoutesByFullPath {
   '/staff/': typeof StaffIndexRoute
   '/uk-control/': typeof UkControlIndexRoute
   '/dashboard/support-tickets/$id': typeof DashboardSupportTicketsIdRoute
-  '/profile/$id/porutham': typeof ProfileIdPoruthamRoute
   '/staff/lead/$id': typeof StaffLeadIdRoute
   '/uk-control/staff/$id': typeof UkControlStaffIdRoute
 }
@@ -412,6 +468,8 @@ export interface FileRoutesByTo {
   '/browse': typeof BrowseRoute
   '/complete-profile': typeof CompleteProfileRoute
   '/contact': typeof ContactRoute
+  '/contact-requests-received': typeof ContactRequestsReceivedRoute
+  '/contact-requests-sent': typeof ContactRequestsSentRoute
   '/faq': typeof FaqRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/interests-received': typeof InterestsReceivedRoute
@@ -422,12 +480,14 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/recently-joined': typeof RecentlyJoinedRoute
+  '/refund': typeof RefundRoute
   '/register': typeof RegisterRoute
   '/saved': typeof SavedRoute
   '/search': typeof SearchRoute
   '/success-stories': typeof SuccessStoriesRoute
   '/terms': typeof TermsRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/dashboard/blocked-users': typeof DashboardBlockedUsersRoute
   '/dashboard/edit-profile': typeof DashboardEditProfileRoute
   '/dashboard/messages': typeof DashboardMessagesRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
@@ -437,7 +497,7 @@ export interface FileRoutesByTo {
   '/dashboard/subscription': typeof DashboardSubscriptionRoute
   '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard/support-tickets': typeof DashboardSupportTicketsRouteWithChildren
-  '/profile/$id': typeof ProfileIdRouteWithChildren
+  '/profile/$id': typeof ProfileIdRoute
   '/staff/create-user': typeof StaffCreateUserRoute
   '/staff/edit-profile': typeof StaffEditProfileRoute
   '/staff/leads': typeof StaffLeadsRoute
@@ -447,8 +507,13 @@ export interface FileRoutesByTo {
   '/uk-control/cms': typeof UkControlCmsRoute
   '/uk-control/edit-profile': typeof UkControlEditProfileRoute
   '/uk-control/leads': typeof UkControlLeadsRoute
+  '/uk-control/maintenance': typeof UkControlMaintenanceRoute
+  '/uk-control/packages': typeof UkControlPackagesRoute
   '/uk-control/payments': typeof UkControlPaymentsRoute
+  '/uk-control/reference-data': typeof UkControlReferenceDataRoute
   '/uk-control/reports': typeof UkControlReportsRoute
+  '/uk-control/role-edit': typeof UkControlRoleEditRoute
+  '/uk-control/roles': typeof UkControlRolesRoute
   '/uk-control/staff': typeof UkControlStaffRouteWithChildren
   '/uk-control/support-tickets': typeof UkControlSupportTicketsRoute
   '/uk-control/users': typeof UkControlUsersRoute
@@ -457,7 +522,6 @@ export interface FileRoutesByTo {
   '/staff': typeof StaffIndexRoute
   '/uk-control': typeof UkControlIndexRoute
   '/dashboard/support-tickets/$id': typeof DashboardSupportTicketsIdRoute
-  '/profile/$id/porutham': typeof ProfileIdPoruthamRoute
   '/staff/lead/$id': typeof StaffLeadIdRoute
   '/uk-control/staff/$id': typeof UkControlStaffIdRoute
 }
@@ -468,6 +532,8 @@ export interface FileRoutesById {
   '/browse': typeof BrowseRoute
   '/complete-profile': typeof CompleteProfileRoute
   '/contact': typeof ContactRoute
+  '/contact-requests-received': typeof ContactRequestsReceivedRoute
+  '/contact-requests-sent': typeof ContactRequestsSentRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/faq': typeof FaqRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -479,6 +545,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/recently-joined': typeof RecentlyJoinedRoute
+  '/refund': typeof RefundRoute
   '/register': typeof RegisterRoute
   '/saved': typeof SavedRoute
   '/search': typeof SearchRoute
@@ -487,6 +554,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/uk-control': typeof UkControlRouteWithChildren
   '/blog_/$slug': typeof BlogSlugRoute
+  '/dashboard/blocked-users': typeof DashboardBlockedUsersRoute
   '/dashboard/edit-profile': typeof DashboardEditProfileRoute
   '/dashboard/messages': typeof DashboardMessagesRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
@@ -496,7 +564,7 @@ export interface FileRoutesById {
   '/dashboard/subscription': typeof DashboardSubscriptionRoute
   '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard/support-tickets': typeof DashboardSupportTicketsRouteWithChildren
-  '/profile/$id': typeof ProfileIdRouteWithChildren
+  '/profile/$id': typeof ProfileIdRoute
   '/staff/create-user': typeof StaffCreateUserRoute
   '/staff/edit-profile': typeof StaffEditProfileRoute
   '/staff/leads': typeof StaffLeadsRoute
@@ -506,8 +574,13 @@ export interface FileRoutesById {
   '/uk-control/cms': typeof UkControlCmsRoute
   '/uk-control/edit-profile': typeof UkControlEditProfileRoute
   '/uk-control/leads': typeof UkControlLeadsRoute
+  '/uk-control/maintenance': typeof UkControlMaintenanceRoute
+  '/uk-control/packages': typeof UkControlPackagesRoute
   '/uk-control/payments': typeof UkControlPaymentsRoute
+  '/uk-control/reference-data': typeof UkControlReferenceDataRoute
   '/uk-control/reports': typeof UkControlReportsRoute
+  '/uk-control/role-edit': typeof UkControlRoleEditRoute
+  '/uk-control/roles': typeof UkControlRolesRoute
   '/uk-control/staff': typeof UkControlStaffRouteWithChildren
   '/uk-control/support-tickets': typeof UkControlSupportTicketsRoute
   '/uk-control/users': typeof UkControlUsersRoute
@@ -516,7 +589,6 @@ export interface FileRoutesById {
   '/staff/': typeof StaffIndexRoute
   '/uk-control/': typeof UkControlIndexRoute
   '/dashboard/support-tickets/$id': typeof DashboardSupportTicketsIdRoute
-  '/profile/$id/porutham': typeof ProfileIdPoruthamRoute
   '/staff/lead/$id': typeof StaffLeadIdRoute
   '/uk-control/staff/$id': typeof UkControlStaffIdRoute
 }
@@ -528,6 +600,8 @@ export interface FileRouteTypes {
     | '/browse'
     | '/complete-profile'
     | '/contact'
+    | '/contact-requests-received'
+    | '/contact-requests-sent'
     | '/dashboard'
     | '/faq'
     | '/forgot-password'
@@ -539,6 +613,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy'
     | '/recently-joined'
+    | '/refund'
     | '/register'
     | '/saved'
     | '/search'
@@ -547,6 +622,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/uk-control'
     | '/blog/$slug'
+    | '/dashboard/blocked-users'
     | '/dashboard/edit-profile'
     | '/dashboard/messages'
     | '/dashboard/notifications'
@@ -566,8 +642,13 @@ export interface FileRouteTypes {
     | '/uk-control/cms'
     | '/uk-control/edit-profile'
     | '/uk-control/leads'
+    | '/uk-control/maintenance'
+    | '/uk-control/packages'
     | '/uk-control/payments'
+    | '/uk-control/reference-data'
     | '/uk-control/reports'
+    | '/uk-control/role-edit'
+    | '/uk-control/roles'
     | '/uk-control/staff'
     | '/uk-control/support-tickets'
     | '/uk-control/users'
@@ -576,7 +657,6 @@ export interface FileRouteTypes {
     | '/staff/'
     | '/uk-control/'
     | '/dashboard/support-tickets/$id'
-    | '/profile/$id/porutham'
     | '/staff/lead/$id'
     | '/uk-control/staff/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -586,6 +666,8 @@ export interface FileRouteTypes {
     | '/browse'
     | '/complete-profile'
     | '/contact'
+    | '/contact-requests-received'
+    | '/contact-requests-sent'
     | '/faq'
     | '/forgot-password'
     | '/interests-received'
@@ -596,12 +678,14 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy'
     | '/recently-joined'
+    | '/refund'
     | '/register'
     | '/saved'
     | '/search'
     | '/success-stories'
     | '/terms'
     | '/blog/$slug'
+    | '/dashboard/blocked-users'
     | '/dashboard/edit-profile'
     | '/dashboard/messages'
     | '/dashboard/notifications'
@@ -621,8 +705,13 @@ export interface FileRouteTypes {
     | '/uk-control/cms'
     | '/uk-control/edit-profile'
     | '/uk-control/leads'
+    | '/uk-control/maintenance'
+    | '/uk-control/packages'
     | '/uk-control/payments'
+    | '/uk-control/reference-data'
     | '/uk-control/reports'
+    | '/uk-control/role-edit'
+    | '/uk-control/roles'
     | '/uk-control/staff'
     | '/uk-control/support-tickets'
     | '/uk-control/users'
@@ -631,7 +720,6 @@ export interface FileRouteTypes {
     | '/staff'
     | '/uk-control'
     | '/dashboard/support-tickets/$id'
-    | '/profile/$id/porutham'
     | '/staff/lead/$id'
     | '/uk-control/staff/$id'
   id:
@@ -641,6 +729,8 @@ export interface FileRouteTypes {
     | '/browse'
     | '/complete-profile'
     | '/contact'
+    | '/contact-requests-received'
+    | '/contact-requests-sent'
     | '/dashboard'
     | '/faq'
     | '/forgot-password'
@@ -652,6 +742,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy'
     | '/recently-joined'
+    | '/refund'
     | '/register'
     | '/saved'
     | '/search'
@@ -660,6 +751,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/uk-control'
     | '/blog_/$slug'
+    | '/dashboard/blocked-users'
     | '/dashboard/edit-profile'
     | '/dashboard/messages'
     | '/dashboard/notifications'
@@ -679,8 +771,13 @@ export interface FileRouteTypes {
     | '/uk-control/cms'
     | '/uk-control/edit-profile'
     | '/uk-control/leads'
+    | '/uk-control/maintenance'
+    | '/uk-control/packages'
     | '/uk-control/payments'
+    | '/uk-control/reference-data'
     | '/uk-control/reports'
+    | '/uk-control/role-edit'
+    | '/uk-control/roles'
     | '/uk-control/staff'
     | '/uk-control/support-tickets'
     | '/uk-control/users'
@@ -689,7 +786,6 @@ export interface FileRouteTypes {
     | '/staff/'
     | '/uk-control/'
     | '/dashboard/support-tickets/$id'
-    | '/profile/$id/porutham'
     | '/staff/lead/$id'
     | '/uk-control/staff/$id'
   fileRoutesById: FileRoutesById
@@ -700,6 +796,8 @@ export interface RootRouteChildren {
   BrowseRoute: typeof BrowseRoute
   CompleteProfileRoute: typeof CompleteProfileRoute
   ContactRoute: typeof ContactRoute
+  ContactRequestsReceivedRoute: typeof ContactRequestsReceivedRoute
+  ContactRequestsSentRoute: typeof ContactRequestsSentRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   FaqRoute: typeof FaqRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
@@ -711,6 +809,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   RecentlyJoinedRoute: typeof RecentlyJoinedRoute
+  RefundRoute: typeof RefundRoute
   RegisterRoute: typeof RegisterRoute
   SavedRoute: typeof SavedRoute
   SearchRoute: typeof SearchRoute
@@ -719,7 +818,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   UkControlRoute: typeof UkControlRouteWithChildren
   BlogSlugRoute: typeof BlogSlugRoute
-  ProfileIdRoute: typeof ProfileIdRouteWithChildren
+  ProfileIdRoute: typeof ProfileIdRoute
   BlogIndexRoute: typeof BlogIndexRoute
 }
 
@@ -772,6 +871,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund': {
+      id: '/refund'
+      path: '/refund'
+      fullPath: '/refund'
+      preLoaderRoute: typeof RefundRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recently-joined': {
@@ -849,6 +955,20 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact-requests-sent': {
+      id: '/contact-requests-sent'
+      path: '/contact-requests-sent'
+      fullPath: '/contact-requests-sent'
+      preLoaderRoute: typeof ContactRequestsSentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact-requests-received': {
+      id: '/contact-requests-received'
+      path: '/contact-requests-received'
+      fullPath: '/contact-requests-received'
+      preLoaderRoute: typeof ContactRequestsReceivedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -935,6 +1055,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UkControlStaffRouteImport
       parentRoute: typeof UkControlRoute
     }
+    '/uk-control/roles': {
+      id: '/uk-control/roles'
+      path: '/roles'
+      fullPath: '/uk-control/roles'
+      preLoaderRoute: typeof UkControlRolesRouteImport
+      parentRoute: typeof UkControlRoute
+    }
+    '/uk-control/role-edit': {
+      id: '/uk-control/role-edit'
+      path: '/role-edit'
+      fullPath: '/uk-control/role-edit'
+      preLoaderRoute: typeof UkControlRoleEditRouteImport
+      parentRoute: typeof UkControlRoute
+    }
     '/uk-control/reports': {
       id: '/uk-control/reports'
       path: '/reports'
@@ -942,11 +1076,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UkControlReportsRouteImport
       parentRoute: typeof UkControlRoute
     }
+    '/uk-control/reference-data': {
+      id: '/uk-control/reference-data'
+      path: '/reference-data'
+      fullPath: '/uk-control/reference-data'
+      preLoaderRoute: typeof UkControlReferenceDataRouteImport
+      parentRoute: typeof UkControlRoute
+    }
     '/uk-control/payments': {
       id: '/uk-control/payments'
       path: '/payments'
       fullPath: '/uk-control/payments'
       preLoaderRoute: typeof UkControlPaymentsRouteImport
+      parentRoute: typeof UkControlRoute
+    }
+    '/uk-control/packages': {
+      id: '/uk-control/packages'
+      path: '/packages'
+      fullPath: '/uk-control/packages'
+      preLoaderRoute: typeof UkControlPackagesRouteImport
+      parentRoute: typeof UkControlRoute
+    }
+    '/uk-control/maintenance': {
+      id: '/uk-control/maintenance'
+      path: '/maintenance'
+      fullPath: '/uk-control/maintenance'
+      preLoaderRoute: typeof UkControlMaintenanceRouteImport
       parentRoute: typeof UkControlRoute
     }
     '/uk-control/leads': {
@@ -1082,6 +1237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardEditProfileRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/blocked-users': {
+      id: '/dashboard/blocked-users'
+      path: '/blocked-users'
+      fullPath: '/dashboard/blocked-users'
+      preLoaderRoute: typeof DashboardBlockedUsersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/blog_/$slug': {
       id: '/blog_/$slug'
       path: '/blog/$slug'
@@ -1102,13 +1264,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/staff/lead/$id'
       preLoaderRoute: typeof StaffLeadIdRouteImport
       parentRoute: typeof StaffRoute
-    }
-    '/profile/$id/porutham': {
-      id: '/profile/$id/porutham'
-      path: '/porutham'
-      fullPath: '/profile/$id/porutham'
-      preLoaderRoute: typeof ProfileIdPoruthamRouteImport
-      parentRoute: typeof ProfileIdRoute
     }
     '/dashboard/support-tickets/$id': {
       id: '/dashboard/support-tickets/$id'
@@ -1135,6 +1290,7 @@ const DashboardSupportTicketsRouteWithChildren =
   )
 
 interface DashboardRouteChildren {
+  DashboardBlockedUsersRoute: typeof DashboardBlockedUsersRoute
   DashboardEditProfileRoute: typeof DashboardEditProfileRoute
   DashboardMessagesRoute: typeof DashboardMessagesRoute
   DashboardNotificationsRoute: typeof DashboardNotificationsRoute
@@ -1148,6 +1304,7 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardBlockedUsersRoute: DashboardBlockedUsersRoute,
   DashboardEditProfileRoute: DashboardEditProfileRoute,
   DashboardMessagesRoute: DashboardMessagesRoute,
   DashboardNotificationsRoute: DashboardNotificationsRoute,
@@ -1203,8 +1360,13 @@ interface UkControlRouteChildren {
   UkControlCmsRoute: typeof UkControlCmsRoute
   UkControlEditProfileRoute: typeof UkControlEditProfileRoute
   UkControlLeadsRoute: typeof UkControlLeadsRoute
+  UkControlMaintenanceRoute: typeof UkControlMaintenanceRoute
+  UkControlPackagesRoute: typeof UkControlPackagesRoute
   UkControlPaymentsRoute: typeof UkControlPaymentsRoute
+  UkControlReferenceDataRoute: typeof UkControlReferenceDataRoute
   UkControlReportsRoute: typeof UkControlReportsRoute
+  UkControlRoleEditRoute: typeof UkControlRoleEditRoute
+  UkControlRolesRoute: typeof UkControlRolesRoute
   UkControlStaffRoute: typeof UkControlStaffRouteWithChildren
   UkControlSupportTicketsRoute: typeof UkControlSupportTicketsRoute
   UkControlUsersRoute: typeof UkControlUsersRoute
@@ -1216,8 +1378,13 @@ const UkControlRouteChildren: UkControlRouteChildren = {
   UkControlCmsRoute: UkControlCmsRoute,
   UkControlEditProfileRoute: UkControlEditProfileRoute,
   UkControlLeadsRoute: UkControlLeadsRoute,
+  UkControlMaintenanceRoute: UkControlMaintenanceRoute,
+  UkControlPackagesRoute: UkControlPackagesRoute,
   UkControlPaymentsRoute: UkControlPaymentsRoute,
+  UkControlReferenceDataRoute: UkControlReferenceDataRoute,
   UkControlReportsRoute: UkControlReportsRoute,
+  UkControlRoleEditRoute: UkControlRoleEditRoute,
+  UkControlRolesRoute: UkControlRolesRoute,
   UkControlStaffRoute: UkControlStaffRouteWithChildren,
   UkControlSupportTicketsRoute: UkControlSupportTicketsRoute,
   UkControlUsersRoute: UkControlUsersRoute,
@@ -1228,24 +1395,14 @@ const UkControlRouteWithChildren = UkControlRoute._addFileChildren(
   UkControlRouteChildren,
 )
 
-interface ProfileIdRouteChildren {
-  ProfileIdPoruthamRoute: typeof ProfileIdPoruthamRoute
-}
-
-const ProfileIdRouteChildren: ProfileIdRouteChildren = {
-  ProfileIdPoruthamRoute: ProfileIdPoruthamRoute,
-}
-
-const ProfileIdRouteWithChildren = ProfileIdRoute._addFileChildren(
-  ProfileIdRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   BrowseRoute: BrowseRoute,
   CompleteProfileRoute: CompleteProfileRoute,
   ContactRoute: ContactRoute,
+  ContactRequestsReceivedRoute: ContactRequestsReceivedRoute,
+  ContactRequestsSentRoute: ContactRequestsSentRoute,
   DashboardRoute: DashboardRouteWithChildren,
   FaqRoute: FaqRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
@@ -1257,6 +1414,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   RecentlyJoinedRoute: RecentlyJoinedRoute,
+  RefundRoute: RefundRoute,
   RegisterRoute: RegisterRoute,
   SavedRoute: SavedRoute,
   SearchRoute: SearchRoute,
@@ -1265,7 +1423,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   UkControlRoute: UkControlRouteWithChildren,
   BlogSlugRoute: BlogSlugRoute,
-  ProfileIdRoute: ProfileIdRouteWithChildren,
+  ProfileIdRoute: ProfileIdRoute,
   BlogIndexRoute: BlogIndexRoute,
 }
 export const routeTree = rootRouteImport

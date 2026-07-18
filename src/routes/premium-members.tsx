@@ -14,9 +14,25 @@ export const Route = createFileRoute("/premium-members")({
 
 function PremiumMembers() {
   const { language } = useLanguage();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('ungalkalyanam_token') : null;
+  const userRaw = typeof window !== 'undefined' ? localStorage.getItem('ungalkalyanam_user') : null;
+  
+  let oppositeGender: string | null = null;
+  try {
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    if (user?.gender) {
+      oppositeGender = user.gender.toLowerCase() === 'male' ? 'female' : 'male';
+    }
+  } catch {}
+
   const { data, isLoading } = useQuery<{ data: any[] }>({
-    queryKey: ["premium-members"],
-    queryFn: () => api.get<{ data: any[] }>("/members/premium"),
+    queryKey: ["premium-members", oppositeGender],
+    queryFn: () => {
+      const url = oppositeGender 
+        ? `/members/premium?gender=${oppositeGender}`
+        : "/members/premium";
+      return api.get<{ data: any[] }>(url);
+    },
   });
 
   const members = data?.data || [];

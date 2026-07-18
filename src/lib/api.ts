@@ -1,9 +1,25 @@
-export const BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
-  ? import.meta.env.VITE_API_URL
-  : 'https://matriback.90skalyanam.com/api';
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-const DEFAULT_TIMEOUT = 30_000; // 30 seconds
+const DEFAULT_TIMEOUT = 300_000; // 5 minutes (increased to handle bulk uploads)
 const MAX_RETRIES = 1;
+
+export function getImageUrl(path: string | null | undefined): string {
+  if (!path) return '';
+  if (path.startsWith('http') || path.startsWith('data:')) {
+    return path;
+  }
+  
+  // Replace backslashes with forward slashes for Windows paths
+  let normalizedPath = path.replace(/\\/g, '/');
+  
+  // Strip starting slash if present
+  if (normalizedPath.startsWith('/')) {
+    normalizedPath = normalizedPath.substring(1);
+  }
+  
+  const base = BASE_URL.replace('/api', '');
+  return `${base}/${normalizedPath}`;
+}
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;

@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Crown, Loader2, Sparkles, MessageCircle, Eye, Heart, Brain, ArrowUpRight, LogIn, UserPlus } from 'lucide-react';
+import { Crown, Loader2, Sparkles, MessageCircle, Eye, Heart, ArrowUpRight, LogIn, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
 type PlanType = {
@@ -34,7 +34,7 @@ export function useUpgrade() {
   return context;
 }
 
-export function isPremiumError(err: any): boolean {
+function isPremiumError(err: any): boolean {
   const msg = err?.message || err?.error || "";
   return msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("upgrade") || msg.toLowerCase().includes("premium") || msg.toLowerCase().includes("credit") || msg.toLowerCase().includes("insufficient");
 }
@@ -64,7 +64,7 @@ export function UpgradeProvider({ children }: { children: ReactNode }) {
   const openPremiumPrompt = useCallback((title?: string, description?: string, isTopup?: boolean) => {
     setPremiumConfig({
       title: title || "Upgrade to Unlock This Feature",
-      description: description || "This is a premium feature. Upgrade your plan to get unlimited access to all features including messaging, contact views, AI Porutham matching, and more.",
+      description: description || "This is a premium feature. Upgrade your plan to get unlimited access to all features including messaging, contact views, and more.",
       isTopup,
     });
     setPremiumOpen(true);
@@ -243,50 +243,76 @@ function UpgradeModal({ open, onClose }: { open: boolean; onClose: () => void })
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="grid gap-3 max-h-[60vh] overflow-y-auto py-2">
-            {plans.map((plan) => (
-              <div key={plan.id} className={`relative rounded-2xl border bg-card p-4 transition-all hover:shadow-soft ${plan.popular ? 'ring-2 ring-primary' : ''}`}>
-                {plan.popular ? (
-                  <span className="absolute -top-2.5 left-4 rounded-full gradient-rose px-3 py-0.5 text-[10px] font-bold text-white shadow-sm flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" /> Most Popular
-                  </span>
-                ) : null}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Crown className={`h-5 w-5 ${plan.slug === 'platinum' ? 'text-rose-500' : plan.slug === 'gold' ? 'text-amber-500' : 'text-muted-foreground'}`} />
-                    <div>
-                      <p className="font-display font-bold">{plan.name}</p>
-                      <p className="text-xs text-muted-foreground">₹{plan.price} / {plan.period}</p>
+          <div className="grid gap-4 max-h-[60vh] overflow-y-auto py-2">
+            {plans.map((plan) => {
+              const isCurrentPlan = user?.profile && Number(user.profile.plan_id) === Number(plan.id);
+              return (
+                <div 
+                  key={plan.id} 
+                  className={`relative rounded-2xl border bg-card p-5 transition-all hover:shadow-md ${
+                    isCurrentPlan 
+                      ? 'border-emerald-500 bg-emerald-500/[0.02] ring-2 ring-emerald-500/20' 
+                      : plan.popular 
+                        ? 'border-rose-500 ring-2 ring-rose-500/10' 
+                        : 'border-slate-200'
+                  }`}
+                >
+                  {isCurrentPlan ? (
+                    <span className="absolute -top-2.5 left-4 rounded-full bg-emerald-500 px-3 py-0.5 text-[10px] font-bold text-white shadow-sm flex items-center gap-1">
+                      <BadgeCheck className="h-3.5 w-3.5" /> Current Plan
+                    </span>
+                  ) : plan.popular ? (
+                    <span className="absolute -top-2.5 left-4 rounded-full gradient-rose px-3 py-0.5 text-[10px] font-bold text-white shadow-sm flex items-center gap-1">
+                      <Sparkles className="h-3 w-3" /> Most Popular
+                    </span>
+                  ) : null}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Crown className={`h-5 w-5 ${
+                        isCurrentPlan 
+                          ? 'text-emerald-500' 
+                          : plan.slug === 'platinum' 
+                            ? 'text-rose-500' 
+                            : plan.slug === 'gold' 
+                              ? 'text-amber-500' 
+                              : 'text-slate-400'
+                      }`} />
+                      <div>
+                        <p className="font-display font-bold text-slate-800">{plan.name}</p>
+                        <p className="text-xs text-muted-foreground font-semibold">₹{plan.price} / {plan.period}</p>
+                      </div>
                     </div>
+                    {isCurrentPlan ? (
+                      <div className="px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-600">
+                        Active
+                      </div>
+                    ) : (
+                      <Button size="sm" onClick={() => handlePayment(plan)} className="shrink-0 bg-rose-600 hover:bg-rose-700 text-white font-semibold">
+                        Select <ArrowUpRight className="ml-1 h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
-                  <Button size="sm" onClick={() => handlePayment(plan)} className="shrink-0">
-                    Select <ArrowUpRight className="ml-1 h-3 w-3" />
-                  </Button>
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-[10px] sm:text-xs">
+                    <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-muted/65">
+                      <Eye className="h-3.5 w-3.5 text-slate-500" />
+                      <span className="font-bold text-slate-700">{plan.contact_quota === -1 ? '∞' : (plan.contact_quota ?? 0)}</span>
+                      <span className="text-muted-foreground scale-90">Contacts</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-muted/65">
+                      <Heart className="h-3.5 w-3.5 text-slate-500" />
+                      <span className="font-bold text-slate-700">{plan.credits === -1 ? '∞' : (plan.credits ?? 0)}</span>
+                      <span className="text-muted-foreground scale-90">Interests</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-muted/65">
+                      <MessageCircle className="h-3.5 w-3.5 text-slate-500" />
+                      <span className="font-bold text-slate-700">{plan.message_quota === -1 ? '∞' : (plan.message_quota ?? 0)}</span>
+                      <span className="text-muted-foreground scale-90">Chats</span>
+                    </div>
+
+                  </div>
                 </div>
-                <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
-                  <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-muted/50">
-                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="font-bold">{plan.contact_quota ?? 0}</span>
-                    <span className="text-muted-foreground">Contacts</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-muted/50">
-                    <Heart className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="font-bold">{plan.credits ?? 0}</span>
-                    <span className="text-muted-foreground">Interests</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-muted/50">
-                    <MessageCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="font-bold">{plan.message_quota ?? 0}</span>
-                    <span className="text-muted-foreground">Chats</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-muted/50">
-                    <Brain className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="font-bold">Yes</span>
-                    <span className="text-muted-foreground">Porutham</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </DialogContent>

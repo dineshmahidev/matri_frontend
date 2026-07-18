@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { 
   FileText, HelpCircle, Heart, Plus, Edit, Trash2, Loader2, Calendar, MapPin, 
   BookOpen, Clock, Upload, Type, Bold, Image as ImageIcon, Crown, Star, Check, X,
-  ShieldAlert, Bell, Layout, Lock, Unlock, Eye, EyeOff
+  ShieldAlert, Bell, Layout, Lock, Unlock, Eye, EyeOff, PlusCircle
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -70,24 +70,6 @@ function AdminCms() {
   const heroImageInputRef = useRef<HTMLInputElement>(null);
   const popupImageInputRef = useRef<HTMLInputElement>(null);
 
-  // --- Plans State ---
-  const [planModalOpen, setPlanModalOpen] = useState(false);
-  const [activePlan, setActivePlan] = useState<any>(null);
-  const [planName, setPlanName] = useState("");
-  const [planPrice, setPlanPrice] = useState<number>(0);
-  const [planPeriod, setPlanPeriod] = useState("Month");
-  const [planColor, setPlanColor] = useState("rose");
-  const [planPopular, setPlanPopular] = useState(false);
-  const [planFeatures, setPlanFeatures] = useState<string[]>([]);
-  const [planContactQuota, setPlanContactQuota] = useState<number>(0);
-  const [planMessageQuota, setPlanMessageQuota] = useState<number>(0);
-  const [planCredits, setPlanCredits] = useState<number>(0);
-
-  // --- Maintenance State ---
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [maintenanceHeadline, setMaintenanceHeadline] = useState("");
-  const [maintenanceMessage, setMaintenanceMessage] = useState("");
-  const [maintenanceTimer, setMaintenanceTimer] = useState("");
 
   // --- Ticker State ---
   const [tickerEnabled, setTickerEnabled] = useState(false);
@@ -131,22 +113,14 @@ function AdminCms() {
     queryFn: () => api.get<any[]>("/admin/blog"),
     enabled: activeTab === "blogs",
   });
-  const { data: plans, isLoading: loadingPlans } = useQuery<any[]>({
-    queryKey: ["admin-plans"],
-    queryFn: () => api.get<any[]>("/admin/plans"),
-    enabled: activeTab === "plans",
-  });
-  const { data: settingsData, isLoading: loadingSettings } = useQuery<any>({ queryKey: ["admin-settings"], queryFn: () => api.get<any>("/admin/settings"), enabled: ["settings", "maintenance", "ticker", "popup", "footer"].includes(activeTab) });
+
+  const { data: settingsData, isLoading: loadingSettings } = useQuery<any>({ queryKey: ["admin-settings"], queryFn: () => api.get<any>("/admin/settings"), enabled: ["settings", "ticker", "popup", "footer"].includes(activeTab) });
 
   
   // Update Settings Form when loaded
   useEffect(() => {
     if (settingsData) {
       setSettingsForm(settingsData);
-      setMaintenanceMode(!!settingsData.maintenance_mode);
-      setMaintenanceHeadline(settingsData.maintenance_headline || "");
-      setMaintenanceMessage(settingsData.maintenance_message || "");
-      setMaintenanceTimer(settingsData.maintenance_timer || "");
       setTickerEnabled(!!settingsData.ticker_enabled);
       setTickerText(settingsData.ticker_text || "");
       setPopupEnabled(!!settingsData.popup_enabled);
@@ -291,31 +265,7 @@ function AdminCms() {
     onError: (err: any) => toast.error(err.message || "Failed to delete blog")
   });
 
-  // Plan Mutations
-  const planMutation = useMutation({
-    mutationFn: ({ id, data }: { id?: number; data: any }) => id ? api.put(`/admin/plans/${id}`, data) : api.post("/admin/plans", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-plans"] });
-      toast.success(activePlan ? "Plan updated" : "Plan created");
-      setPlanModalOpen(false);
-    },
-    onError: (err: any) => toast.error(err.message || "Failed to save plan")
-  });
-  const deletePlanMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/admin/plans/${id}`),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-plans"] }); toast.success("Plan deleted"); },
-    onError: (err: any) => toast.error(err.message || "Failed to delete plan")
-  });
 
-  // Maintenance Mutation
-  const maintenanceMutation = useMutation({
-    mutationFn: (data: any) => api.post("/admin/settings", { settings: data }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-settings"] });
-      toast.success("Maintenance settings updated");
-    },
-    onError: (err: any) => toast.error(err.message || "Failed to update maintenance settings")
-  });
 
   // Ticker Mutation
   const tickerMutation = useMutation({
@@ -437,37 +387,6 @@ function AdminCms() {
     }
   };
 
-  // Handlers - Plans
-  const handleOpenPlan = (plan?: any) => {
-    setActivePlan(plan || null);
-    setPlanName(plan?.name || "");
-    setPlanPrice(plan?.price || 0);
-    setPlanContactQuota(plan?.contact_quota || 0);
-    setPlanMessageQuota(plan?.message_quota || 0);
-    setPlanCredits(plan?.credits || 0);
-    setPlanPeriod(plan?.period || "Month");
-    setPlanColor(plan?.color || "rose");
-    setPlanPopular(!!plan?.popular);
-    setPlanFeatures(Array.isArray(plan?.features) ? plan.features : [""]);
-    setPlanModalOpen(true);
-  };
-  const handleSavePlan = (e: React.FormEvent) => {
-    e.preventDefault();
-    const filteredFeatures = planFeatures.map(f => f.trim()).filter(Boolean);
-    if (filteredFeatures.length === 0) return toast.error("Please add at least one feature");
-    planMutation.mutate({ id: activePlan?.id, data: { name: planName, price: Number(planPrice), period: planPeriod, color: planColor, popular: planPopular, features: filteredFeatures, contact_quota: planContactQuota, message_quota: planMessageQuota, credits: planCredits } });
-  };
-
-  // Handlers - Maintenance
-  const handleSaveMaintenance = (e: React.FormEvent) => {
-    e.preventDefault();
-    maintenanceMutation.mutate({
-      maintenance_mode: maintenanceMode,
-      maintenance_headline: maintenanceHeadline,
-      maintenance_message: maintenanceMessage,
-      maintenance_timer: maintenanceTimer,
-    });
-  };
 
   // Handlers - Ticker
   const handleSaveTicker = (e: React.FormEvent) => {
@@ -540,15 +459,15 @@ function AdminCms() {
           <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
             <TabsList className="bg-card border w-max">
               <TabsTrigger value="pages" className="data-[state=active]:bg-primary data-[state=active]:text-white">Pages</TabsTrigger>
-              <TabsTrigger value="plans" className="data-[state=active]:bg-primary data-[state=active]:text-white">Packages</TabsTrigger>
+
               <TabsTrigger value="blogs" className="data-[state=active]:bg-primary data-[state=active]:text-white">Blogs</TabsTrigger>
               <TabsTrigger value="faqs" className="data-[state=active]:bg-primary data-[state=active]:text-white">FAQs</TabsTrigger>
               <TabsTrigger value="stories" className="data-[state=active]:bg-primary data-[state=active]:text-white">Success Stories</TabsTrigger>
-              <TabsTrigger value="maintenance" className="data-[state=active]:bg-primary data-[state=active]:text-white">Maintenance</TabsTrigger>
               <TabsTrigger value="ticker" className="data-[state=active]:bg-primary data-[state=active]:text-white">Ticker</TabsTrigger>
               <TabsTrigger value="popup" className="data-[state=active]:bg-primary data-[state=active]:text-white">Popup</TabsTrigger>
               <TabsTrigger value="footer" className="data-[state=active]:bg-primary data-[state=active]:text-white">Footer</TabsTrigger>
               <TabsTrigger value="settings" className="data-[state=active]:bg-primary data-[state=active]:text-white">Settings</TabsTrigger>
+              <TabsTrigger value="castes-religions" className="data-[state=active]:bg-primary data-[state=active]:text-white">Castes & Religions</TabsTrigger>
             </TabsList>
           </div>
 
@@ -588,41 +507,6 @@ function AdminCms() {
                     )}
                   </tbody>
                 </table>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* PLANS TAB */}
-          <TabsContent value="plans" className="m-0 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Membership Plans</h2>
-              <Button onClick={() => handleOpenPlan()} className="gradient-rose text-white shadow-soft" size="sm">
-                <Plus className="mr-1.5 h-4 w-4" /> Add Plan
-              </Button>
-            </div>
-            {loadingPlans ? (
-              <div className="flex h-32 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-            ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {plans?.map((p: any) => (
-                  <div key={p.id} className={`rounded-2xl border p-6 relative flex flex-col ${p.popular ? 'bg-gradient-to-b from-primary/10 to-primary/5 border-primary shadow-md' : 'bg-card shadow-soft'}`}>
-                    {p.popular && <span className="absolute -top-3 left-6 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-primary text-white shadow-sm"><Star className="h-3 w-3 fill-white" /> Popular</span>}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className={`p-2 rounded-xl ${p.popular ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}><Crown className="h-5 w-5" /></div>
-                      <div className="flex items-center gap-1">
-                        <Button onClick={() => handleOpenPlan(p)} variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                        <Button onClick={() => confirm("Delete plan?") && deletePlanMutation.mutate(p.id)} variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                      </div>
-                    </div>
-                    <h3 className="font-display text-xl font-bold">{p.name}</h3>
-                    <p className="mt-1 font-display text-3xl font-bold">₹{p.price}<span className="text-sm font-normal text-muted-foreground"> / {p.period}</span></p>
-                    <ul className="mt-6 space-y-2.5 text-sm text-muted-foreground">
-                      {Array.isArray(p.features) && p.features.map((f: string, i: number) => (
-                        <li key={i} className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" /><span>{f}</span></li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
               </div>
             )}
           </TabsContent>
@@ -735,45 +619,6 @@ function AdminCms() {
             )}
           </TabsContent>
         
-          {/* MAINTENANCE TAB */}
-          <TabsContent value="maintenance" className="m-0 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Maintenance Mode</h2>
-            </div>
-            {loadingSettings ? (
-              <div className="flex h-32 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-            ) : (
-              <form onSubmit={handleSaveMaintenance} className="space-y-6 rounded-xl border bg-card p-6 shadow-sm">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between bg-muted/30 p-4 rounded-xl border">
-                    <div>
-                      <Label className="cursor-pointer" htmlFor="maintenance-mode">Enable Maintenance Mode</Label>
-                      <p className="text-xs text-muted-foreground">When enabled, visitors will see a maintenance page instead of the site.</p>
-                    </div>
-                    <Switch id="maintenance-mode" checked={maintenanceMode} onCheckedChange={setMaintenanceMode} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="maintenance-headline">Headline</Label>
-                    <Input id="maintenance-headline" value={maintenanceHeadline} onChange={e => setMaintenanceHeadline(e.target.value)} placeholder="We'll be back soon!" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="maintenance-message">Message</Label>
-                    <Textarea id="maintenance-message" rows={3} value={maintenanceMessage} onChange={e => setMaintenanceMessage(e.target.value)} placeholder="We are currently performing scheduled maintenance. Please check back shortly." />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="maintenance-timer">Expected End Time (optional)</Label>
-                    <Input id="maintenance-timer" type="datetime-local" value={maintenanceTimer} onChange={e => setMaintenanceTimer(e.target.value)} />
-                  </div>
-                </div>
-                <div className="pt-4 border-t flex justify-end">
-                  <Button type="submit" className="gradient-rose text-white" disabled={maintenanceMutation.isPending}>
-                    {maintenanceMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Maintenance
-                  </Button>
-                </div>
-              </form>
-            )}
-          </TabsContent>
-
           {/* TICKER TAB */}
           <TabsContent value="ticker" className="m-0 space-y-4">
             <div className="flex items-center justify-between">
@@ -868,8 +713,8 @@ function AdminCms() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5"><Label>Footer Description (English)</Label><Textarea rows={3} value={footerDescriptionEn} onChange={e => setFooterDescriptionEn(e.target.value)} /></div>
                     <div className="space-y-1.5"><Label>Footer Description (Tamil)</Label><Textarea rows={3} value={footerDescriptionTa} onChange={e => setFooterDescriptionTa(e.target.value)} /></div>
-                    <div className="space-y-1.5"><Label>Phone Number</Label><Input value={footerPhone} onChange={e => setFooterPhone(e.target.value)} placeholder="+91 80 4567 8900" /></div>
-                    <div className="space-y-1.5"><Label>Email Address</Label><Input value={footerEmail} onChange={e => setFooterEmail(e.target.value)} placeholder="support@ungalkalyanam.in" /></div>
+                    <div className="space-y-1.5"><Label>Phone Number</Label><Input value={footerPhone} onChange={e => setFooterPhone(e.target.value)} placeholder="+91 9597558432" /></div>
+                    <div className="space-y-1.5"><Label>Email Address</Label><Input value={footerEmail} onChange={e => setFooterEmail(e.target.value)} placeholder="ungalkalyanam.in@gmail.com" /></div>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5"><Label>Address (English)</Label><Textarea rows={2} value={footerAddressEn} onChange={e => setFooterAddressEn(e.target.value)} placeholder="8th Floor, Indiranagar, Bengaluru 560038" /></div>
@@ -917,8 +762,8 @@ function AdminCms() {
                 <div className="space-y-4 pt-4 border-t">
                   <h3 className="font-semibold text-primary">Contact Info</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1.5"><Label>Contact Phone</Label><Input value={settingsForm.contact_phone || ""} onChange={e => setSettingsForm({...settingsForm, contact_phone: e.target.value})} placeholder="+91 80 4567 8900" /></div>
-                    <div className="space-y-1.5"><Label>Contact Email</Label><Input value={settingsForm.contact_email || ""} onChange={e => setSettingsForm({...settingsForm, contact_email: e.target.value})} placeholder="support@ungalkalyanam.in" /></div>
+                    <div className="space-y-1.5"><Label>Contact Phone</Label><Input value={settingsForm.contact_phone || ""} onChange={e => setSettingsForm({...settingsForm, contact_phone: e.target.value})} placeholder="+91 9597558432" /></div>
+                    <div className="space-y-1.5"><Label>Contact Email</Label><Input value={settingsForm.contact_email || ""} onChange={e => setSettingsForm({...settingsForm, contact_email: e.target.value})} placeholder="ungalkalyanam.in@gmail.com" /></div>
                     <div className="space-y-1.5"><Label>Office Address (English)</Label><Textarea rows={2} value={settingsForm.contact_address_en || ""} onChange={e => setSettingsForm({...settingsForm, contact_address_en: e.target.value})} placeholder="8th Floor, Indiranagar, Bengaluru 560038" /></div>
                     <div className="space-y-1.5"><Label>Office Address (Tamil)</Label><Textarea rows={2} value={settingsForm.contact_address_ta || ""} onChange={e => setSettingsForm({...settingsForm, contact_address_ta: e.target.value})} /></div>
                   </div>
@@ -1018,6 +863,43 @@ function AdminCms() {
                     <div className="space-y-1.5"><Label>Message Cost</Label><Input type="number" min="0" value={settingsForm.credit_cost_message || "1"} onChange={e => setSettingsForm({...settingsForm, credit_cost_message: e.target.value})} /><p className="text-xs text-muted-foreground">Message quota deducted per first message</p></div>
                   </div>
                 </div>
+
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="font-semibold text-primary">Manager Permissions</h3>
+                  <p className="text-xs text-muted-foreground">Toggle which features managers can access. Changes apply after saving.</p>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {[
+                      { key: "users", label: "Members" },
+                      { key: "users_bulk", label: "Bulk User Add" },
+                      { key: "leads", label: "Leads" },
+                      { key: "staff", label: "Staff Management" },
+                      { key: "packages", label: "Packages" },
+                      { key: "cms", label: "CMS" },
+                      { key: "reference_data", label: "Reference Data" },
+                      { key: "payments", label: "Payments" },
+                      { key: "reports", label: "Reports" },
+                      { key: "support_tickets", label: "Support Tickets" },
+                      { key: "maintenance", label: "Maintenance Mode" },
+                    ].map(({ key, label }) => {
+                      const perms = (() => {
+                        try { return JSON.parse(settingsForm.manager_permissions || '{}'); } catch { return {}; }
+                      })();
+                      return (
+                        <div key={key} className="flex items-center justify-between rounded-xl border bg-muted/20 p-3">
+                          <Label htmlFor={`mp-${key}`} className="cursor-pointer text-sm">{label}</Label>
+                          <Switch
+                            id={`mp-${key}`}
+                            checked={perms[key] !== false}
+                            onCheckedChange={v => {
+                              const current = { ...perms, [key]: v };
+                              setSettingsForm({ ...settingsForm, manager_permissions: JSON.stringify(current) });
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 <div className="pt-4 border-t flex justify-end">
                   <Button type="submit" className="gradient-rose text-white" disabled={settingsMutation.isPending}>
                     {settingsMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Settings
@@ -1025,6 +907,11 @@ function AdminCms() {
                 </div>
               </form>
             )}
+          </TabsContent>
+
+          {/* CASTES & RELIGIONS TAB */}
+          <TabsContent value="castes-religions" className="m-0 space-y-6">
+            <CastesReligionsManager />
           </TabsContent>
 
         </Tabs>
@@ -1071,81 +958,6 @@ function AdminCms() {
         </DialogContent>
       </Dialog>
 
-      {/* PLANS MODAL */}
-      <Dialog open={planModalOpen} onOpenChange={setPlanModalOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-4 sm:p-6 w-[95vw]">
-          <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="font-display text-2xl font-bold">{activePlan ? "Edit Plan" : "Create Plan"}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSavePlan} className="flex-1 overflow-y-auto py-4 space-y-5 pr-2">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="plan-name">Plan Name</Label>
-                <Input id="plan-name" value={planName} onChange={e => setPlanName(e.target.value)} required />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="plan-price">Price (INR)</Label>
-                <Input id="plan-price" type="number" value={planPrice} onChange={e => setPlanPrice(Number(e.target.value))} required />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="plan-period">Period</Label>
-                <select id="plan-period" value={planPeriod} onChange={e => setPlanPeriod(e.target.value)} required className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
-                  <option>Month</option>
-                  <option>3 Months</option>
-                  <option>6 Months</option>
-                  <option>Year</option>
-                  <option>Lifetime</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex items-center justify-between bg-muted/30 p-4 rounded-xl border">
-              <div>
-                <Label className="cursor-pointer" htmlFor="plan-popular">Popular Plan</Label>
-                <p className="text-xs text-muted-foreground">Highlight this plan</p>
-              </div>
-              <Switch id="plan-popular" checked={planPopular} onCheckedChange={setPlanPopular} />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="contact-quota">Contact View Quota</Label>
-                <Input id="contact-quota" type="number" value={planContactQuota} onChange={e => setPlanContactQuota(Number(e.target.value))} required />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="message-quota">Message Quota</Label>
-                <Input id="message-quota" type="number" value={planMessageQuota} onChange={e => setPlanMessageQuota(Number(e.target.value))} required />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="plan-credits">Interest Credits</Label>
-                <Input id="plan-credits" type="number" value={planCredits} onChange={e => setPlanCredits(Number(e.target.value))} required />
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between border-b pb-1">
-                <Label className="font-semibold text-sm">Features List</Label>
-                <Button type="button" variant="outline" size="sm" onClick={() => setPlanFeatures(p => [...p, ""])} className="h-8 gap-1"><Plus className="h-3.5 w-3.5" /> Add</Button>
-              </div>
-              <div className="space-y-2.5 max-h-[150px] overflow-y-auto pr-1">
-                {planFeatures.map((feat, idx) => (
-                  <div key={idx} className="flex gap-2 items-center">
-                    <Input value={feat} onChange={e => {
-                      const c = [...planFeatures];
-                      c[idx] = e.target.value;
-                      setPlanFeatures(c);
-                    }} required />
-                    {planFeatures.length > 1 && (
-                      <Button type="button" variant="ghost" size="icon" onClick={() => setPlanFeatures(p => p.filter((_, i) => i !== idx))} className="h-9 w-9 text-destructive"><X className="h-4 w-4" /></Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <DialogFooter className="pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => setPlanModalOpen(false)}>Cancel</Button>
-              <Button type="submit" className="gradient-rose text-white" disabled={planMutation.isPending}>Save</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* BLOG MODAL */}
       <Dialog open={blogModalOpen} onOpenChange={setBlogModalOpen}>
@@ -1228,5 +1040,154 @@ function AdminCms() {
       </Dialog>
 
     </AdminLayout>
+  );
+}
+
+function CastesReligionsManager() {
+  const [selectedReligionId, setSelectedReligionId] = useState<number | null>(null);
+  const [religionModal, setReligionModal] = useState(false);
+  const [editingReligion, setEditingReligion] = useState<any>(null);
+  const [religionName, setReligionName] = useState("");
+  const [casteModal, setCasteModal] = useState(false);
+  const [editingCaste, setEditingCaste] = useState<any>(null);
+  const [casteName, setCasteName] = useState("");
+  const qc = useQueryClient();
+
+  const { data: religions, isLoading: loadingR } = useQuery<any[]>({
+    queryKey: ["admin-religions"],
+    queryFn: () => api.get<any[]>("/admin/religions"),
+  });
+
+  const { data: castes, isLoading: loadingC } = useQuery<any[]>({
+    queryKey: ["admin-castes", selectedReligionId],
+    queryFn: () => api.get<any[]>(`/admin/castes${selectedReligionId ? `?religion_id=${selectedReligionId}` : ""}`),
+    enabled: !!selectedReligionId,
+  });
+
+  const createReligion = useMutation({
+    mutationFn: (data: any) => api.post("/admin/religions", data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-religions"] }); toast.success("Religion created"); setReligionModal(false); setReligionName(""); },
+  });
+  const updateReligion = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/admin/religions/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-religions"] }); toast.success("Religion updated"); setReligionModal(false); setEditingReligion(null); setReligionName(""); },
+  });
+  const deleteReligion = useMutation({
+    mutationFn: (id: number) => api.delete(`/admin/religions/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-religions"] }); toast.success("Religion deleted"); if (selectedReligionId) setSelectedReligionId(null); },
+  });
+
+  const createCaste = useMutation({
+    mutationFn: (data: any) => api.post("/admin/castes", data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-castes"] }); toast.success("Caste created"); setCasteModal(false); setCasteName(""); },
+  });
+  const updateCaste = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/admin/castes/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-castes"] }); toast.success("Caste updated"); setCasteModal(false); setEditingCaste(null); setCasteName(""); },
+  });
+  const deleteCaste = useMutation({
+    mutationFn: (id: number) => api.delete(`/admin/castes/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-castes"] }); toast.success("Caste deleted"); },
+  });
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Religions Column */}
+      <div className="rounded-xl border bg-card p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Religions</h2>
+          <Button size="sm" onClick={() => { setEditingReligion(null); setReligionName(""); setReligionModal(true); }}>
+            <Plus className="h-4 w-4 mr-1" /> Add
+          </Button>
+        </div>
+        {loadingR ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
+        ) : (
+          <div className="space-y-1">
+            {religions?.map((r) => (
+              <div
+                key={r.id}
+                className={`flex items-center justify-between rounded-lg px-3 py-2 cursor-pointer transition-colors ${selectedReligionId === r.id ? "bg-primary/10 border border-primary/30" : "hover:bg-muted"}`}
+                onClick={() => setSelectedReligionId(r.id)}
+              >
+                <span className="font-medium text-sm">{r.name}</span>
+                <div className="flex gap-1">
+                  <button onClick={(e) => { e.stopPropagation(); setEditingReligion(r); setReligionName(r.name); setReligionModal(true); }} className="p-1 hover:text-primary"><Edit className="h-3.5 w-3.5" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); if (confirm("Delete this religion and all its castes?")) deleteReligion.mutate(r.id); }} className="p-1 hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Castes Column */}
+      <div className="rounded-xl border bg-card p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Castes {selectedReligionId ? `(${religions?.find(r => r.id === selectedReligionId)?.name})` : ""}</h2>
+          {selectedReligionId && (
+            <Button size="sm" onClick={() => { setEditingCaste(null); setCasteName(""); setCasteModal(true); }}>
+              <Plus className="h-4 w-4 mr-1" /> Add
+            </Button>
+          )}
+        </div>
+        {!selectedReligionId ? (
+          <p className="text-sm text-muted-foreground py-8 text-center">Select a religion to manage its castes</p>
+        ) : loadingC ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
+        ) : (
+          <div className="space-y-1">
+            {castes?.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">No castes found. Add one above.</p>}
+            {castes?.map((c) => (
+              <div key={c.id} className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-muted transition-colors">
+                <span className="text-sm">{c.name}</span>
+                <div className="flex gap-1">
+                  <button onClick={() => { setEditingCaste(c); setCasteName(c.name); setCasteModal(true); }} className="p-1 hover:text-primary"><Edit className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => { if (confirm("Delete this caste?")) deleteCaste.mutate(c.id); }} className="p-1 hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Religion Modal */}
+      <Dialog open={religionModal} onOpenChange={setReligionModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingReligion ? "Edit Religion" : "Add Religion"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={e => { e.preventDefault(); if (editingReligion) updateReligion.mutate({ id: editingReligion.id, data: { name: religionName } }); else createReligion.mutate({ name: religionName }); }}>
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input value={religionName} onChange={e => setReligionName(e.target.value)} required />
+            </div>
+            <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" onClick={() => setReligionModal(false)}>Cancel</Button>
+              <Button type="submit" className="gradient-rose text-white">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Caste Modal */}
+      <Dialog open={casteModal} onOpenChange={setCasteModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingCaste ? "Edit Caste" : "Add Caste"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={e => { e.preventDefault(); const payload: any = { name: casteName }; if (!editingCaste) payload.religion_id = selectedReligionId; if (editingCaste) updateCaste.mutate({ id: editingCaste.id, data: payload }); else createCaste.mutate(payload); }}>
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input value={casteName} onChange={e => setCasteName(e.target.value)} required />
+            </div>
+            <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" onClick={() => setCasteModal(false)}>Cancel</Button>
+              <Button type="submit" className="gradient-rose text-white">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useState, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { api, getImageUrl } from "@/lib/api";
+import { useUpgrade } from "@/lib/upgrade";
 
 type MemberCard = {
   id: number;
@@ -30,6 +31,7 @@ type MemberCard = {
 
 export function ProfileCard({ m, index = 0 }: { m: MemberCard; index?: number }) {
   const queryClient = useQueryClient();
+  const { openUpgrade } = useUpgrade();
   const [saved, setSaved] = useState(m.isSaved || false);
   const [interestSent, setInterestSent] = useState(m.interestSent || false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -70,6 +72,11 @@ export function ProfileCard({ m, index = 0 }: { m: MemberCard; index?: number })
       }
       queryClient.invalidateQueries({ queryKey: ["members"] });
     } catch (err: any) {
+      const msg = (err?.message || err?.error || "").toLowerCase();
+      if (msg.includes("premium") || msg.includes("upgrade") || msg.includes("credit") || msg.includes("insufficient")) {
+        openUpgrade();
+        return;
+      }
       toast.error(err.message || "Failed to send interest.");
     }
   };
@@ -97,7 +104,7 @@ export function ProfileCard({ m, index = 0 }: { m: MemberCard; index?: number })
           )}
           {!imgError && (
             <img 
-              src={m.photo} 
+              src={getImageUrl(m.photo)} 
               alt={m.name} 
               className={`h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${
                 imgLoaded ? "opacity-100 blur-0" : "opacity-0 blur-sm"
@@ -117,17 +124,25 @@ export function ProfileCard({ m, index = 0 }: { m: MemberCard; index?: number })
           </div>
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/65 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-3 text-white">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 flex-wrap">
               <h3 className="truncate font-display text-lg font-semibold">{m.name}</h3>
-              {m.verified && <BadgeCheck className="h-4 w-4 fill-primary text-white" />}
+              {m.verified && (
+                <BadgeCheck className="h-4 w-4 fill-rose-500 text-white shrink-0" />
+              )}
             </div>
-            <p className="text-xs text-white/80">{m.age} yrs · {m.height} · {m.community}</p>
+            <p className="text-xs text-white/80">
+              {[
+                m.age ? `${m.age} yrs` : null,
+                m.height || null,
+                m.community || null
+              ].filter(Boolean).join(" · ") || "—"}
+            </p>
           </div>
         </div>
         <div className="space-y-1.5 p-3.5 pb-0 text-xs text-muted-foreground">
-          <p className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {m.city}, {m.state}</p>
-          <p className="flex items-center gap-1.5"><Briefcase className="h-3.5 w-3.5" /> {m.profession}</p>
-          <p className="flex items-center gap-1.5"><GraduationCap className="h-3.5 w-3.5" /> {m.education}</p>
+          {m.city && <p className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {m.city}</p>}
+          {m.profession && <p className="flex items-center gap-1.5"><Briefcase className="h-3.5 w-3.5" /> {m.profession}</p>}
+          {m.education && <p className="flex items-center gap-1.5"><GraduationCap className="h-3.5 w-3.5" /> {m.education}</p>}
         </div>
       </Link>
       <div className="p-3.5">

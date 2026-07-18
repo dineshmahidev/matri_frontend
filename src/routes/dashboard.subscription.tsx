@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { DashboardLayout } from "@/components/layout/AppLayouts";
 import {
   Crown, Check, Sparkles, ChevronLeft, CreditCard,
-  Calendar, Zap, MessageCircle, Eye, Heart, Download, Loader2, ArrowUpRight, Brain
+  Calendar, Zap, MessageCircle, Eye, Heart, Download, Loader2, ArrowUpRight
 } from "lucide-react";
 import { useLanguage } from "@/lib/language";
 import { useQuery } from "@tanstack/react-query";
@@ -270,7 +270,7 @@ function ManageSubscription() {
                       </button>
                     )}
                   </div>
-                  <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                     <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-muted/50">
                       <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="font-bold">{plan.contact_quota ?? 0}</span>
@@ -285,11 +285,6 @@ function ManageSubscription() {
                       <MessageCircle className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="font-bold">{plan.message_quota ?? 0}</span>
                       <span className="text-muted-foreground">{isTamil ? "செய்திகள்" : "Chats"}</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-muted/50">
-                      <Brain className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="font-bold">{isTamil ? "ஆம்" : "Yes"}</span>
-                      <span className="text-muted-foreground">Porutham</span>
                     </div>
                   </div>
                 </motion.div>

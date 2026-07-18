@@ -24,6 +24,14 @@ function AdminStaff() {
   const [createEmail, setCreateEmail] = useState("");
   const [createPhone, setCreatePhone] = useState("");
   const [createPassword, setCreatePassword] = useState("");
+  const [createRole, setCreateRole] = useState("staff");
+
+  const { data: rolesData } = useQuery<any[]>({
+    queryKey: ["admin-roles"],
+    queryFn: () => api.get<any[]>("/admin/roles"),
+  });
+  
+  const selectableRoles = (rolesData || []).filter(r => !['super-admin', 'admin'].includes(r.name));
 
   const { data: staffData, isLoading } = useQuery<any[]>({
     queryKey: ["admin-staff"],
@@ -72,6 +80,7 @@ function AdminStaff() {
       email: createEmail,
       phone: createPhone || undefined,
       password: createPassword,
+      role: createRole,
     });
   };
 
@@ -181,6 +190,21 @@ function AdminStaff() {
               <div className="space-y-1.5">
                 <Label htmlFor="staff-password">Password *</Label>
                 <Input id="staff-password" type="password" value={createPassword} onChange={(e) => setCreatePassword(e.target.value)} placeholder="Min 8 characters" required minLength={8} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="staff-role">Role *</Label>
+                <select 
+                  id="staff-role"
+                  value={createRole}
+                  onChange={(e) => setCreateRole(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  required
+                >
+                  <option value="" disabled>Select a role</option>
+                  {selectableRoles.map(role => (
+                    <option key={role.id} value={role.name}>{role.name.charAt(0).toUpperCase() + role.name.slice(1)}</option>
+                  ))}
+                </select>
               </div>
               <div className="flex gap-3 pt-2">
                 <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)} className="flex-1">

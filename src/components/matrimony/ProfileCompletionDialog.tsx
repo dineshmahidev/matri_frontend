@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle, Camera, ImagePlus, Check, X, Loader2, ChevronRight } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, getImageUrl } from "@/lib/api";
 import { compressImage } from "@/lib/compressImage";
 import { toast } from "sonner";
 
@@ -52,16 +52,16 @@ export function ProfileCompletionDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(1);
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(currentPhoto || null);
-  const [galleryPhotos, setGalleryPhotos] = useState<string[]>(gallery);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(getImageUrl(currentPhoto) || null);
+  const [galleryPhotos, setGalleryPhotos] = useState<string[]>(gallery.map(p => getImageUrl(p)));
 
   // Reset state when dialog opens/closes
   const prevOpenRef = useRef(open);
   if (open !== prevOpenRef.current) {
     prevOpenRef.current = open;
     if (open) {
-      setProfilePhoto(currentPhoto || null);
-      setGalleryPhotos(gallery);
+      setProfilePhoto(getImageUrl(currentPhoto) || null);
+      setGalleryPhotos(gallery.map(p => getImageUrl(p)));
       setStep(1);
     }
   }
@@ -297,7 +297,7 @@ export function ProfileCompletionDialog({
               <div className="relative">
                 {profilePhoto ? (
                   <img
-                    src={profilePhoto}
+                    src={getImageUrl(profilePhoto)}
                     alt="Profile"
                     className="h-32 w-32 rounded-full border-4 border-primary/20 object-cover shadow-md"
                   />
@@ -367,7 +367,7 @@ export function ProfileCompletionDialog({
                     {photo ? (
                       <>
                         <img
-                          src={photo}
+                          src={getImageUrl(photo)}
                           alt={`Gallery ${i + 1}`}
                           className="h-full w-full object-cover"
                         />

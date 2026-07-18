@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Camera, BadgeCheck, Loader2, Pencil, LogOut, MessageCircle, 
   Eye, Heart as HeartIcon, X, ChevronLeft, ChevronRight, Trash2,
   Settings, Shield, CreditCard, HelpCircle, ChevronRight as ChevronRightIcon,
-  Crown
+  Crown, Sparkles
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, getImageUrl } from "@/lib/api";
 import { useLanguage } from "@/lib/language";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUpgrade } from "@/lib/upgrade";
@@ -190,8 +190,17 @@ function MyProfile() {
 
         <div className="overflow-hidden rounded-3xl border shadow-soft relative">
           {/* Package Name Label Top Left */}
-          <div className="absolute top-4 left-4 z-10 bg-white/20 backdrop-blur-sm border border-white/20 px-3 py-1.5 rounded-full text-xs font-bold text-white shadow-sm">
-            {profile.planName || (profile.premium ? "Premium Plan" : "Free Plan")}
+          <div className="absolute top-4 left-4 z-10 flex flex-col gap-1 items-start">
+            <div className="bg-white/20 backdrop-blur-sm border border-white/20 px-3 py-1.5 rounded-full text-xs font-bold text-white shadow-sm flex items-center gap-1.5">
+              {profile.premium && <Crown className="h-3.5 w-3.5 text-[#D4AF37] fill-[#D4AF37]" />}
+              {profile.planName || (profile.premium ? "Premium Plan" : "Free Plan")}
+            </div>
+            {profile.premium && profile.plan_expires_at && (
+              <div className="bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-md text-[10px] font-semibold text-white/90">
+                {language === "ta" ? "முடிவடையும் நாள்: " : "Expires: "}
+                {new Date(profile.plan_expires_at).toLocaleDateString(language === "ta" ? "ta-IN" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+              </div>
+            )}
           </div>
 
           <div className="p-6 pt-16 gradient-rose text-white">
@@ -202,9 +211,13 @@ function MyProfile() {
                 onClick={() => profilePhotoInputRef.current?.click()}
               >
                 <img 
-                  src={profile.photo || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400"} 
+                  src={getImageUrl(profile.photo) || (profile.gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png")} 
                   className="h-32 w-32 rounded-full border-4 border-white/20 object-cover shadow-elevated" 
                   alt="" 
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.src = profile.gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png";
+                  }}
                 />
                 <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   {updateProfilePhotoMutation.isPending ? (
@@ -221,10 +234,6 @@ function MyProfile() {
                   <div className="text-center sm:text-left">
                     <div className="flex items-center justify-center sm:justify-start gap-2">
                       <h1 className="font-display text-2xl font-bold">{profile.name}</h1>
-                      <span className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${profile.online ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300" : "bg-white/10 border-white/20 text-white/60"}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${profile.online ? "bg-emerald-400 animate-pulse" : "bg-white/40"}`} />
-                        {profile.online ? "Online" : "Offline"}
-                      </span>
                       {profile.verified && <BadgeCheck className="h-5 w-5 fill-white text-primary" />}
                     </div>
                     <p className="text-sm text-white/80">{profile.id}</p>
@@ -243,7 +252,7 @@ function MyProfile() {
                   </div>
                   <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-1.5 border border-white/10" title="Interest Credits">
                     <HeartIcon className="h-4 w-4" />
-                    <span className="font-bold">{profile.planCredits || profile.credits || 0}</span>
+                    <span className="font-bold">{profile.credits ?? 0}</span>
                   </div>
                 </div>
               </div>
@@ -257,10 +266,17 @@ function MyProfile() {
                   {language === "ta" ? "சுயவிவரம்" : "Public Profile"}
                 </Link>
               </Button>
-              <Button type="button" variant="outline" className="bg-amber-400/20 border-amber-400/40 text-amber-300 hover:bg-amber-400/30 w-full justify-center" onClick={openUpgrade}>
-                <Crown className="mr-2 h-4 w-4 text-[#D4AF37]" />
-                {language === "ta" ? "மேம்படுத்து" : "Upgrade"}
-              </Button>
+              {profile.premium ? (
+                <Button type="button" variant="outline" className="bg-emerald-400/20 border-emerald-400/40 text-emerald-300 hover:bg-emerald-400/30 w-full justify-center cursor-pointer" onClick={openUpgrade}>
+                  <Sparkles className="mr-2 h-4 w-4 text-emerald-300" />
+                  {language === "ta" ? "டாப்-அப்" : "Top-up Credits"}
+                </Button>
+              ) : (
+                <Button type="button" variant="outline" className="bg-amber-400/20 border-amber-400/40 text-amber-300 hover:bg-amber-400/30 w-full justify-center cursor-pointer" onClick={openUpgrade}>
+                  <Crown className="mr-2 h-4 w-4 text-[#D4AF37]" />
+                  {language === "ta" ? "மேம்படுத்து" : "Upgrade"}
+                </Button>
+              )}
               <Button asChild type="button" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 w-full justify-center">
                 <Link to="/dashboard/edit-profile">
                   <Pencil className="mr-2 h-4 w-4" />
@@ -280,7 +296,7 @@ function MyProfile() {
           const hasFamily = profile.family && (profile.family.father || profile.family.mother || profile.family.siblings);
           if (hasFamily) completion += 15;
           
-          if (profile.rasi && profile.nakshatram && profile.dob && profile.tob) completion += 15;
+          if (profile.dob) completion += 15;
           if (profile.education && profile.profession && profile.income) completion += 10;
           if (gallery && gallery.length > 0) completion += 10;
           
@@ -339,7 +355,6 @@ function MyProfile() {
               items: [
                 { label: language === "ta" ? "பெயர்" : "Name", value: profile.name },
                 { label: language === "ta" ? "பிறந்த தேதி" : "DOB", value: profile.dob },
-                { label: language === "ta" ? "பிறந்த நேரம்" : "TOB", value: profile.tob },
                 { label: language === "ta" ? "திருமண நிலை" : "Marital Status", value: profile.maritalStatus },
                 { label: "Height", value: profile.height },
                 { label: language === "ta" ? "இரத்த குழு" : "Blood Group", value: profile.blood_group },
@@ -351,13 +366,6 @@ function MyProfile() {
                 { label: language === "ta" ? "மதம்" : "Religion", value: profile.religion },
                 { label: language === "ta" ? "சமூகம்" : "Community", value: profile.community },
                 { label: language === "ta" ? "தாய்மொழி" : "Mother Tongue", value: profile.motherTongue },
-              ],
-            },
-            {
-              title: language === "ta" ? "ஜாதகம்" : "Horoscope",
-              items: [
-                { label: "Rasi", value: profile.rasi },
-                { label: "Nakshatram", value: profile.nakshatram },
               ],
             },
             {
@@ -382,6 +390,14 @@ function MyProfile() {
                 { label: language === "ta" ? "தாய்" : "Mother", value: profile.family?.mother },
                 { label: language === "ta" ? "உடன்பிறந்தோர்" : "Siblings", value: profile.family?.siblings },
                 { label: language === "ta" ? "குடும்ப நிலை" : "Family Status", value: profile.family?.familyStatus },
+              ],
+            },
+            {
+              title: language === "ta" ? "வாழ்க்கை முறை" : "Lifestyle",
+              items: [
+                { label: language === "ta" ? "புகைப்பிடிப்பவர்" : "Smoker", value: profile.smoking_status },
+                { label: language === "ta" ? "மது அருந்துபவர்" : "Drinker", value: profile.drinking_status },
+                { label: language === "ta" ? "ஊனமுற்றவர்" : "Disability", value: profile.disability },
               ],
             },
           ].map(section => {

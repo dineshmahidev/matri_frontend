@@ -16,10 +16,11 @@ import {
   X,
   Upload,
   Image as ImageIcon,
-  Coins
+  Coins,
+  ChevronDown
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, BASE_URL } from "@/lib/api";
 import { toast } from "sonner";
 import { 
   Sheet, 
@@ -46,19 +47,66 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { StatusPill } from "./uk-control.index";
 import { RELIGIONS, CASTES, RELIGION_CASTE_MAP, OPTION_TRANSLATIONS } from "@/data/castes";
-import { RASIS, NAKSHATRAMS, RASI_NAKSHATRAM_MAP } from "@/data/astrology";
 import { EDUCATION_LEVELS, PROFESSIONS } from "@/data/education";
 import { MemberProfileFields } from "@/components/matrimony/MemberProfileFields";
+import { BulkUploadModal } from "@/components/admin/BulkUploadModal";
 
 export const Route = createFileRoute("/uk-control/users")({
   head: () => ({ meta: [{ title: "Users — Admin" }] }),
   component: AdminUsers,
 });
 
+const getImageUrl = (path: string) => {
+  if (!path) return '';
+  if (path.startsWith('http') || path.startsWith('data:')) return path;
+  
+  // Replace backslashes with forward slashes for Windows paths
+  let normalizedPath = path.replace(/\\/g, '/');
+  
+  const base = BASE_URL.replace('/api', '');
+  return `${base}/${normalizedPath.startsWith('/') ? normalizedPath.substring(1) : normalizedPath}`;
+};
+
+const getCity = (cityStr: any) => {
+  if (!cityStr) return "N/A";
+  
+  let parsedStr = cityStr;
+  
+  if (typeof parsedStr === 'string') {
+     try {
+       while (typeof parsedStr === 'string' && parsedStr.startsWith('{')) {
+         parsedStr = JSON.parse(parsedStr);
+       }
+     } catch (e) {
+       // if it fails to parse halfway, use whatever we successfully parsed so far
+     }
+  }
+
+  if (typeof parsedStr === 'object' && parsedStr !== null) {
+      if (parsedStr.address) {
+        const parts = parsedStr.address.split(',');
+        if (parts.length >= 2) {
+            return parts[parts.length > 2 ? parts.length - 2 : 0].trim();
+        }
+        return parsedStr.address.trim();
+      }
+  }
+
+  if (typeof cityStr === 'string') return cityStr.replace(/\\"/g, '"');
+  return String(cityStr);
+};
+
 function AdminUsers() {
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -67,6 +115,7 @@ function AdminUsers() {
   const [hasGallery, setHasGallery] = useState("all");
   const [hasPremium, setHasPremium] = useState("all");
   const [hasFeatured, setHasFeatured] = useState("all");
+  const [filterGender, setFilterGender] = useState("all");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [activeUser, setActiveUser] = useState<any>(null);
@@ -77,7 +126,7 @@ function AdminUsers() {
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState("");
   const [dob, setDob] = useState("");
-  const [tob, setTob] = useState("");
+  // const [tob, setTob] = useState("");
   const [bio, setBio] = useState("");
   const [height, setHeight] = useState("");
   const [religion, setReligion] = useState("");
@@ -106,9 +155,7 @@ function AdminUsers() {
   const [addContactInput, setAddContactInput] = useState("");
   const [addMessageInput, setAddMessageInput] = useState("");
 
-  // Horoscope fields
-  const [rasi, setRasi] = useState("");
-  const [nakshatram, setNakshatram] = useState("");
+  // Horoscope fields (removed rasi/nakshatram)
 
   // Family fields
   const [father, setFather] = useState("");
@@ -143,6 +190,11 @@ function AdminUsers() {
   const [createStateId, setCreateStateId] = useState<number | null>(null);
   const [createCityId, setCreateCityId] = useState<number | null>(null);
 
+  // Bulk add user states
+  const [isBulkAdding, setIsBulkAdding] = useState(false);
+  const [bulkUsers, setBulkUsers] = useState<any[]>([{ name: "", email: "", phone: "", gender: "male", password: "", dob: "", religion: "", community: "", state: "", city: "", mother_tongue: "", profile_pic: "", profile_pic_file: null }]);
+  const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
+
   // Fetch available plans
   const { data: plansData } = useQuery<any[]>({
     queryKey: ["admin-plans-list"],
@@ -152,7 +204,7 @@ function AdminUsers() {
 
   // Fetch users (paginated)
   const { data: usersResponse, isLoading } = useQuery<any>({
-    queryKey: ["admin-users", page, search, hasPhoto, hasGallery, hasPremium, hasFeatured],
+    queryKey: ["admin-users", page, search, hasPhoto, hasGallery, hasPremium, hasFeatured, filterGender],
     queryFn: () => {
       const params = new URLSearchParams({ page: String(page) });
       if (search) params.set("search", search);
@@ -160,12 +212,14 @@ function AdminUsers() {
       if (hasGallery !== "all") params.set("has_gallery", hasGallery);
       if (hasPremium !== "all") params.set("premium", hasPremium);
       if (hasFeatured !== "all") params.set("featured", hasFeatured);
+      if (filterGender !== "all") params.set("gender", filterGender);
       return api.get<any>(`/admin/users?${params.toString()}`);
     },
   });
 
   const users = usersResponse?.data || [];
   const meta = usersResponse?.meta;
+  const counts = usersResponse?.counts || usersResponse?.meta?.counts || { male: 0, female: 0 };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,6 +275,34 @@ function AdminUsers() {
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete users");
+    },
+  });
+
+  // Mutate for bulk premium toggle
+  const bulkPremiumMutation = useMutation({
+    mutationFn: ({ ids, premium, planId }: { ids: number[]; premium: boolean; planId?: number | null }) => 
+      api.post("/admin/users/bulk-premium", { ids, premium, plan_id: planId }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setSelectedIds([]);
+      toast.success(data.message || "Bulk premium updated");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update bulk premium status");
+    },
+  });
+
+  // Mutate for bulk verification toggle
+  const bulkVerifyMutation = useMutation({
+    mutationFn: ({ ids, verified }: { ids: number[]; verified: boolean }) => 
+      api.post("/admin/users/bulk-verify", { ids, verified }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setSelectedIds([]);
+      toast.success(data.message || "Bulk verification updated");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update bulk verification status");
     },
   });
 
@@ -293,7 +375,6 @@ function AdminUsers() {
     setPhone(user.phone || "");
     setGender(user.gender || "male");
     setDob(user.dob || "");
-    setTob(user.tob || "");
     setBio(user.bio || "");
     setHeight(user.height || "");
     setReligion(user.religion || "");
@@ -317,8 +398,6 @@ function AdminUsers() {
     setAddCreditsInput("");
     setAddContactInput("");
     setAddMessageInput("");
-    setRasi(user.rasi || "");
-    setNakshatram(user.nakshatram || "");
     setFather(user.family?.father || "");
     setMother(user.family?.mother || "");
     setSiblings(user.family?.siblings || "");
@@ -345,7 +424,6 @@ function AdminUsers() {
         phone,
         gender,
         dob,
-        tob,
         bio,
         height,
         religion,
@@ -363,8 +441,6 @@ function AdminUsers() {
         photo,
         gallery,
         planId: selectedPlanId === "free" ? null : parseInt(selectedPlanId),
-        rasi,
-        nakshatram,
         family: {
           father,
           mother,
@@ -405,29 +481,106 @@ function AdminUsers() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="font-display text-3xl font-bold">Users</h1>
-            <p className="text-sm text-muted-foreground">
-              {meta ? `${meta.total} total users` : "Loading users..."}
-            </p>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+              {meta ? (
+                <>
+                  <span className="font-semibold text-foreground">Total: {meta.total}</span>
+                  <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Male: {counts.male}</span>
+                  <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-pink-500"></div> Female: {counts.female}</span>
+                </>
+              ) : "Loading users..."}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {selectedIds.length > 0 && (
-              <Button 
-                onClick={handleBulkDelete} 
-                variant="destructive"
-                className="shadow-soft"
-                disabled={bulkDeleteMutation.isPending}
-              >
-                {bulkDeleteMutation.isPending ? (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="mr-1.5 h-4 w-4" />
-                )}
-                Delete Selected ({selectedIds.length})
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="shadow-soft gap-1.5 border-primary/30">
+                    Bulk Actions ({selectedIds.length})
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel>Update Selected</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger disabled={bulkPremiumMutation.isPending}>
+                      <Crown className="h-4 w-4 mr-2 text-amber-500 fill-amber-500" />
+                      Set Premium
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent className="w-56">
+                        <DropdownMenuLabel>Select Membership Plan</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => bulkPremiumMutation.mutate({ ids: selectedIds, premium: true, planId: null })}
+                        >
+                          Free Plan (Basic)
+                        </DropdownMenuItem>
+                        {plans.map((p: any) => (
+                          <DropdownMenuItem 
+                            key={p.id}
+                            onClick={() => bulkPremiumMutation.mutate({ ids: selectedIds, premium: true, planId: p.id })}
+                          >
+                            {p.name} (₹{p.price})
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                  <DropdownMenuItem 
+                    onClick={() => bulkPremiumMutation.mutate({ ids: selectedIds, premium: false })}
+                    disabled={bulkPremiumMutation.isPending}
+                  >
+                    <Crown className="h-4 w-4 mr-2 text-muted-foreground" />
+                    Remove Premium
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => bulkVerifyMutation.mutate({ ids: selectedIds, verified: true })}
+                    disabled={bulkVerifyMutation.isPending}
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2 text-emerald-500" />
+                    Mark Verified
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => bulkVerifyMutation.mutate({ ids: selectedIds, verified: false })}
+                    disabled={bulkVerifyMutation.isPending}
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2 text-muted-foreground" />
+                    Remove Verified
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleBulkDelete}
+                    disabled={bulkDeleteMutation.isPending}
+                    className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Selected
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
-            <Button onClick={() => setIsCreatingUser(true)} className="gradient-rose text-white shadow-soft">
-              <Plus className="mr-1.5 h-4 w-4" /> Add user
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setIsBulkAdding(true)}
+                variant="outline" 
+                className="shadow-soft"
+              >
+                <Upload className="mr-1.5 h-4 w-4" /> Bulk Add
+              </Button>
+              <Button 
+                onClick={() => window.location.href = "/uk-control/bulk-upload"} 
+                variant="outline" 
+                className="shadow-soft"
+              >
+                <Upload className="mr-1.5 h-4 w-4" /> Bulk Import
+              </Button>
+              <Button onClick={() => setIsCreatingUser(true)} className="gradient-rose text-white shadow-soft">
+                <Plus className="mr-1.5 h-4 w-4" /> Add user
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -499,6 +652,17 @@ function AdminUsers() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">Gender</Label>
+              <Select value={filterGender} onValueChange={(v) => { setFilterGender(v); setPage(1); }}>
+                <SelectTrigger className="h-9 w-28"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -553,7 +717,7 @@ function AdminUsers() {
                         >
                           <div className="flex items-center gap-3">
                             {m.photo ? (
-                              <img src={m.photo} className="h-9 w-9 rounded-full object-cover border shadow-sm" alt="" />
+                              <img src={getImageUrl(m.photo)} className="h-9 w-9 rounded-full object-cover border shadow-sm" alt="" />
                             ) : (
                               <div className="h-9 w-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center border uppercase text-xs">
                                 {m.name ? m.name.slice(0, 2) : "??"}
@@ -570,7 +734,7 @@ function AdminUsers() {
                           </div>
                         </td>
                         <td className="p-4 font-mono text-muted-foreground">{m.id}</td>
-                        <td className="p-4">{m.city ? `${m.city}, ${m.state}` : "N/A"}</td>
+                        <td className="p-4">{getCity(m.city)}{m.state ? `, ${m.state}` : ''}</td>
                         <td className="p-4">
                           <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${m.premium ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-700"}`}>
                             {m.premium ? "Premium" : "Free"}
@@ -668,7 +832,7 @@ function AdminUsers() {
 
       {/* Edit Slide-over Drawer */}
       <Sheet open={isEditing} onOpenChange={setIsEditing}>
-        <SheetContent className="w-full sm:max-w-xl h-full flex flex-col p-6 border-l shadow-2xl max-w-full">
+        <SheetContent className="w-full lg:max-w-[100vw] h-full flex flex-col p-6 border-l shadow-2xl">
           <SheetHeader className="pb-4 border-b">
             <SheetTitle className="font-display text-2xl font-bold flex items-center gap-2">
               Edit User Profile
@@ -683,11 +847,179 @@ function AdminUsers() {
             </SheetDescription>
           </SheetHeader>
 
-          <form onSubmit={handleSave} className="flex-1 overflow-y-auto py-4 pr-1 space-y-6">
-            {/* Account Info */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Account Info</h3>
-              <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSave} className="flex-1 overflow-y-auto py-4 pr-1 max-w-7xl mx-auto w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-8 items-start">
+              
+              {/* LEFT COLUMN: Profile Visual Summary Card */}
+              <div className="space-y-6 lg:sticky lg:top-0">
+                <div className="rounded-3xl border shadow-soft overflow-hidden bg-card">
+                  {/* Photo Container */}
+                  <div className="relative aspect-[4/5] bg-muted group">
+                    <img 
+                      src={getImageUrl(photo) || (gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png")} 
+                      className="w-full h-full object-cover object-top" 
+                      alt="User Profile" 
+                      onError={(e) => {
+                        e.currentTarget.src = gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png";
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="rounded-full shadow-md gap-1.5"
+                        disabled={isUploadingPhoto}
+                        onClick={() => document.getElementById("admin-photo-upload")?.click()}
+                      >
+                        {isUploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                        Change Photo
+                      </Button>
+                    </div>
+                    {/* Top Right Badges */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
+                      {premium && (
+                        <span className="flex items-center gap-1 rounded-full gradient-gold px-2.5 py-1 text-[10px] font-bold text-gold-foreground shadow-soft">
+                          <Crown className="h-3.5 w-3.5" /> Premium
+                        </span>
+                      )}
+                      {verified && (
+                        <span className="flex items-center gap-1 rounded-full bg-emerald-500 text-white px-2.5 py-1 text-[10px] font-bold shadow-soft">
+                          <ShieldCheck className="h-3.5 w-3.5" /> Verified
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Profile Vital Stats */}
+                  <div className="p-5 border-t space-y-4">
+                    <div>
+                      <h2 className="text-xl font-bold text-foreground">{name || "Unnamed"}</h2>
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5">{activeUser?.id || "N/A"}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2.5 text-xs">
+                      <div className="bg-muted/40 p-2.5 rounded-xl">
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">Gender</p>
+                        <p className="font-semibold text-foreground mt-0.5 capitalize">{gender || "Not Specified"}</p>
+                      </div>
+                      <div className="bg-muted/40 p-2.5 rounded-xl">
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">DOB</p>
+                        <p className="font-semibold text-foreground mt-0.5">{dob || "Not Specified"}</p>
+                      </div>
+                      <div className="bg-muted/40 p-2.5 rounded-xl">
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">Caste</p>
+                        <p className="font-semibold text-foreground mt-0.5 truncate">{community || "Other"}</p>
+                      </div>
+                      <div className="bg-muted/40 p-2.5 rounded-xl">
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">City</p>
+                        <p className="font-semibold text-foreground mt-0.5 truncate">{city || "Not Specified"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Photo Gallery Visual Card */}
+                <div className="rounded-3xl border shadow-soft bg-card p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="flex items-center gap-1.5 font-bold text-sm">
+                      <ImageIcon className="h-4 w-4 text-primary" />
+                      Gallery Pictures
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl shadow-sm text-xs"
+                      disabled={isUploadingGallery}
+                      onClick={() => document.getElementById("admin-gallery-upload")?.click()}
+                    >
+                      {isUploadingGallery ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+                      Add Photos
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 gap-2">
+                    {gallery.map((url, index) => (
+                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden border shadow-sm group">
+                        <img src={url} className="w-full h-full object-cover" alt="" />
+                        <button
+                          type="button"
+                          onClick={() => setGallery((prev) => prev.filter((_, i) => i !== index))}
+                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                    {gallery.length === 0 && (
+                      <p className="col-span-full py-4 text-center text-[11px] text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
+                        No gallery photos added yet.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: Edit Form Fields */}
+              <div className="space-y-6">
+                
+                {/* Hidden input wrappers for file triggers */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  id="admin-photo-upload"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setIsUploadingPhoto(true);
+                    const formData = new FormData();
+                    formData.append("image", file);
+                    try {
+                      const res = await api.post<any>("/admin/upload", formData);
+                      setPhoto(res.url);
+                      toast.success("Profile photo uploaded!");
+                    } catch (err: any) {
+                      toast.error(err.message || "Upload failed");
+                    } finally {
+                      setIsUploadingPhoto(false);
+                    }
+                  }}
+                />
+                
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  id="admin-gallery-upload"
+                  onChange={async (e) => {
+                    const files = e.target.files;
+                    if (!files || files.length === 0) return;
+                    setIsUploadingGallery(true);
+                    try {
+                      const uploadedUrls: string[] = [];
+                      for (let i = 0; i < files.length; i++) {
+                        const formData = new FormData();
+                        formData.append("image", files[i]);
+                        const res = await api.post<any>("/admin/upload", formData);
+                        uploadedUrls.push(res.url);
+                      }
+                      setGallery((prev) => [...prev, ...uploadedUrls]);
+                      toast.success("Gallery pictures uploaded!");
+                    } catch (err: any) {
+                      toast.error(err.message || "Upload failed");
+                    } finally {
+                      setIsUploadingGallery(false);
+                    }
+                  }}
+                />
+
+                {/* Account Info Form Card */}
+                <div className="rounded-3xl border bg-card p-6 shadow-soft space-y-4">
+                  <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Account Info</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-name">Full Name</Label>
                   <Input 
@@ -714,131 +1046,6 @@ function AdminUsers() {
                     onChange={(e) => setPhone(e.target.value)} 
                   />
                 </div>
-                <div className="space-y-1.5 col-span-2">
-                  <Label htmlFor="edit-photo">Profile Photo</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      id="edit-photo" 
-                      value={photo} 
-                      onChange={(e) => setPhoto(e.target.value)} 
-                      placeholder="URL to profile picture"
-                      className="flex-1"
-                    />
-                    <div className="relative">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        id="admin-photo-upload"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          setIsUploadingPhoto(true);
-                          const formData = new FormData();
-                          formData.append("image", file);
-                          try {
-                            const res = await api.post<any>("/admin/upload", formData);
-                            setPhoto(res.url);
-                            toast.success("Profile photo uploaded!");
-                          } catch (err: any) {
-                            toast.error(err.message || "Upload failed");
-                          } finally {
-                            setIsUploadingPhoto(false);
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={isUploadingPhoto}
-                        onClick={() => document.getElementById("admin-photo-upload")?.click()}
-                      >
-                        {isUploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                  {photo && (
-                    <div className="mt-2 relative w-20 h-20 rounded-xl overflow-hidden border shadow-sm group">
-                      <img src={photo} className="w-full h-full object-cover" alt="Profile" />
-                      <button
-                        type="button"
-                        onClick={() => setPhoto("")}
-                        className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Gallery Section */}
-                <div className="space-y-2 col-span-2 border-t pt-4 mt-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="flex items-center gap-1.5">
-                      <ImageIcon className="h-4 w-4 text-primary" />
-                      Gallery Pictures
-                    </Label>
-                    <div className="relative">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        id="admin-gallery-upload"
-                        onChange={async (e) => {
-                          const files = e.target.files;
-                          if (!files || files.length === 0) return;
-                          setIsUploadingGallery(true);
-                          try {
-                            const uploadedUrls: string[] = [];
-                            for (let i = 0; i < files.length; i++) {
-                              const formData = new FormData();
-                              formData.append("image", files[i]);
-                              const res = await api.post<any>("/admin/upload", formData);
-                              uploadedUrls.push(res.url);
-                            }
-                            setGallery((prev) => [...prev, ...uploadedUrls]);
-                            toast.success("Gallery pictures uploaded!");
-                          } catch (err: any) {
-                            toast.error(err.message || "Upload failed");
-                          } finally {
-                            setIsUploadingGallery(false);
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={isUploadingGallery}
-                        onClick={() => document.getElementById("admin-gallery-upload")?.click()}
-                      >
-                        {isUploadingGallery ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Plus className="h-4 w-4 mr-1.5" />}
-                        Add Photos
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-3 mt-2">
-                    {gallery.map((url, index) => (
-                      <div key={index} className="relative aspect-square rounded-xl overflow-hidden border shadow-sm group">
-                        <img src={url} className="w-full h-full object-cover" alt={`Gallery ${index}`} />
-                        <button
-                          type="button"
-                          onClick={() => setGallery((prev) => prev.filter((_, i) => i !== index))}
-                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      </div>
-                    ))}
-                    {gallery.length === 0 && (
-                      <p className="col-span-full py-4 text-center text-xs text-muted-foreground bg-muted/30 rounded-xl border border-dashed">
-                        No gallery photos added yet.
-                      </p>
-                    )}
-                  </div>
-                </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-gender">Gender</Label>
                   <Select value={gender} onValueChange={setGender}>
@@ -861,29 +1068,21 @@ function AdminUsers() {
                     onChange={(e) => setDob(e.target.value)} 
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-tob">Time of Birth</Label>
-                  <Input 
-                    id="edit-tob" 
-                    type="time" 
-                    value={tob} 
-                    onChange={(e) => setTob(e.target.value)} 
-                  />
-                </div>
+                {/* TOB field removed */}
               </div>
             </div>
 
             {/* Status & Privileges */}
-            <div className="space-y-4 bg-muted/30 p-4 rounded-2xl border">
+            <div className="space-y-4 bg-muted/30 p-5 rounded-2xl border">
               <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Status & Privileges</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div className="flex items-center justify-between border bg-card p-3.5 rounded-xl shadow-sm">
                   <div className="space-y-0.5">
-                    <Label className="flex items-center gap-1.5 cursor-pointer" htmlFor="edit-premium">
+                    <Label className="flex items-center gap-1.5 cursor-pointer text-sm font-semibold" htmlFor="edit-premium">
                       <Crown className="h-4 w-4 text-amber-500 fill-amber-500" />
                       Premium Member
                     </Label>
-                    <p className="text-xs text-muted-foreground">Grant unlock credits and highlighted badges.</p>
+                    <p className="text-[11px] text-muted-foreground">Grant unlock credits and highlighted badges.</p>
                   </div>
                   <Switch 
                     id="edit-premium" 
@@ -895,8 +1094,8 @@ function AdminUsers() {
                   />
                 </div>
                 
-                <div className="space-y-1.5 border-t pt-3">
-                  <Label htmlFor="edit-plan">Membership Plan</Label>
+                <div className="space-y-1.5 bg-card border p-3.5 rounded-xl shadow-sm">
+                  <Label htmlFor="edit-plan" className="text-xs font-semibold">Membership Plan</Label>
                   <Select 
                     value={selectedPlanId} 
                     onValueChange={(val) => {
@@ -904,7 +1103,7 @@ function AdminUsers() {
                       setPremium(val !== "free");
                     }}
                   >
-                    <SelectTrigger id="edit-plan">
+                    <SelectTrigger id="edit-plan" className="h-9">
                       <SelectValue placeholder="Select plan" />
                     </SelectTrigger>
                     <SelectContent>
@@ -917,6 +1116,8 @@ function AdminUsers() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="space-y-3">
 
                 {/* Credit Management */}
                 <div className="border-t pt-3 space-y-3">
@@ -999,7 +1200,7 @@ function AdminUsers() {
             {/* Religious Background */}
             <div className="space-y-4">
               <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Religious Background</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-religion">Religion</Label>
                   <Select value={religion} onValueChange={setReligion}>
@@ -1049,7 +1250,7 @@ function AdminUsers() {
             {/* Location & Career */}
             <div className="space-y-4">
               <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Location & Career</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-city">City</Label>
                   <Input 
@@ -1124,43 +1325,12 @@ function AdminUsers() {
               </div>
             </div>
 
-            {/* Horoscope Details */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Horoscope Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-rasi">Rasi (Moon Sign)</Label>
-                  <Select value={rasi} onValueChange={(v) => { setRasi(v); setNakshatram(""); }}>
-                    <SelectTrigger id="edit-rasi">
-                      <SelectValue placeholder="Select Rasi" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RASIS.map((r) => (
-                        <SelectItem key={r.en} value={r.en}>{r.en}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-nakshatram">Nakshatram (Birth Star)</Label>
-                  <Select value={nakshatram} onValueChange={setNakshatram}>
-                    <SelectTrigger id="edit-nakshatram">
-                      <SelectValue placeholder="Select Nakshatram" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(rasi ? (RASI_NAKSHATRAM_MAP[rasi] || []) : NAKSHATRAMS.map(n => n.en)).map((nName: string) => (
-                        <SelectItem key={nName} value={nName}>{nName}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
+            {/* Horoscope Details (removed rasi/nakshatram) */}
 
             {/* Family Details */}
             <div className="space-y-4">
               <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Family Details</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-father">Father's Name</Label>
                   <Input id="edit-father" value={father} onChange={(e) => setFather(e.target.value)} />
@@ -1192,7 +1362,7 @@ function AdminUsers() {
             {/* Partner Preferences */}
             <div className="space-y-4">
               <h3 className="font-semibold text-sm tracking-wider uppercase text-primary border-b pb-1">Partner Preferences</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-pref-age">Age Range</Label>
                   <Select value={prefAgeRange} onValueChange={setPrefAgeRange}>
@@ -1266,6 +1436,9 @@ function AdminUsers() {
                   <Label htmlFor="edit-pref-location">Preferred Location</Label>
                   <Input id="edit-pref-location" value={prefLocation} onChange={(e) => setPrefLocation(e.target.value)} placeholder="e.g. Chennai, Bangalore" />
                 </div>
+              </div>
+            </div>
+
               </div>
             </div>
 
@@ -1436,6 +1609,200 @@ function AdminUsers() {
           </form>
         </SheetContent>
       </Sheet>
+
+      {/* Bulk Add Users Drawer */}
+      <Sheet open={isBulkAdding} onOpenChange={(open) => { if (!open) { setIsBulkAdding(false); setBulkUsers([{ name: "", email: "", phone: "", gender: "male", password: "", dob: "", religion: "", community: "", state: "", city: "", mother_tongue: "", profile_pic: "", profile_pic_file: null }]); } }}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader className="pb-4 border-b">
+            <SheetTitle className="font-display text-xl font-bold">Bulk Add Users</SheetTitle>
+            <SheetDescription>Add multiple users at once with selectable fields. Fill in the details below.</SheetDescription>
+          </SheetHeader>
+          <div className="py-6 space-y-6">
+            {bulkUsers.map((u, idx) => (
+              <div key={idx} className="rounded-2xl border bg-card p-5 space-y-4 relative">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">{idx + 1}</span>
+                    User #{idx + 1}
+                  </h3>
+                  {bulkUsers.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setBulkUsers(bulkUsers.filter((_, i) => i !== idx))}
+                      className="text-muted-foreground hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>Full Name *</Label>
+                    <Input value={u.name} onChange={(e) => { const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], name: e.target.value }; setBulkUsers(copy); }} placeholder="e.g. Rajesh Kumar" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Email *</Label>
+                    <Input type="email" value={u.email} onChange={(e) => { const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], email: e.target.value }; setBulkUsers(copy); }} placeholder="rajesh@example.com" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Phone *</Label>
+                    <Input value={u.phone} onChange={(e) => { const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], phone: e.target.value }; setBulkUsers(copy); }} placeholder="9876543210" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Gender *</Label>
+                    <select className="field" value={u.gender} onChange={(e) => { const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], gender: e.target.value }; setBulkUsers(copy); }}>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>DOB</Label>
+                    <Input type="date" value={u.dob} onChange={(e) => { const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], dob: e.target.value }; setBulkUsers(copy); }} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Password</Label>
+                    <Input type="password" value={u.password} onChange={(e) => { const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], password: e.target.value }; setBulkUsers(copy); }} placeholder="Min 8 chars (auto if empty)" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Religion</Label>
+                    <select className="field" value={u.religion} onChange={(e) => { const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], religion: e.target.value, community: "" }; setBulkUsers(copy); }}>
+                      <option value="">Select</option>
+                      {RELIGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Caste / Community</Label>
+                    <select className="field" value={u.community} onChange={(e) => { const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], community: e.target.value }; setBulkUsers(copy); }}>
+                      <option value="">Select</option>
+                      {(u.religion ? (RELIGION_CASTE_MAP[u.religion] || ["Other"]) : CASTES).map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>State</Label>
+                    <Input value={u.state} onChange={(e) => { const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], state: e.target.value }; setBulkUsers(copy); }} placeholder="e.g. Tamil Nadu" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>City</Label>
+                    <Input value={u.city} onChange={(e) => { const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], city: e.target.value }; setBulkUsers(copy); }} placeholder="e.g. Chennai" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Mother Tongue</Label>
+                    <select className="field" value={u.mother_tongue} onChange={(e) => { const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], mother_tongue: e.target.value }; setBulkUsers(copy); }}>
+                      <option value="">Select</option>
+                      {["Tamil", "Telugu", "Kannada", "Malayalam", "Hindi", "English", "Urdu", "Other"].map((m) => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Profile Photo</Label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        id={`bulk-photo-${idx}`}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const copy = [...bulkUsers];
+                          copy[idx] = { ...copy[idx], profile_pic_file: file };
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            copy[idx] = { ...copy[idx], profile_pic_preview: ev.target?.result as string };
+                            setBulkUsers([...copy]);
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                      <label htmlFor={`bulk-photo-${idx}`} className="cursor-pointer">
+                        {u.profile_pic_preview ? (
+                          <div className="relative h-14 w-14 rounded-xl overflow-hidden border">
+                            <img src={u.profile_pic_preview} alt="" className="h-full w-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); const copy = [...bulkUsers]; copy[idx] = { ...copy[idx], profile_pic_file: null, profile_pic_preview: "" }; setBulkUsers(copy); }}
+                              className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed bg-muted/50 hover:bg-muted transition-colors">
+                            <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <Button
+              variant="outline"
+              onClick={() => setBulkUsers([...bulkUsers, { name: "", email: "", phone: "", gender: "male", password: "", dob: "", religion: "", community: "", state: "", city: "", mother_tongue: "", profile_pic: "", profile_pic_file: null, profile_pic_preview: "" }])}
+              className="w-full border-dashed"
+            >
+              <Plus className="mr-1.5 h-4 w-4" /> Add Another User
+            </Button>
+          </div>
+
+          <SheetFooter className="pt-4 border-t">
+            <Button variant="outline" onClick={() => { setIsBulkAdding(false); setBulkUsers([{ name: "", email: "", phone: "", gender: "male", password: "", dob: "", religion: "", community: "", state: "", city: "", mother_tongue: "", profile_pic: "", profile_pic_file: null }]); }}>
+              Cancel
+            </Button>
+            <Button
+              className="gradient-rose text-white"
+              disabled={isBulkSubmitting}
+              onClick={async () => {
+                const valid = bulkUsers.filter((u) => u.name && u.email && u.phone);
+                if (valid.length === 0) {
+                  toast.error("At least one user with name, email, and phone is required");
+                  return;
+                }
+
+                setIsBulkSubmitting(true);
+                try {
+                  // Upload images first
+                  const usersWithPics = await Promise.all(
+                    valid.map(async (u) => {
+                      if (u.profile_pic_file) {
+                        const formData = new FormData();
+                        formData.append("image", u.profile_pic_file);
+                        formData.append("type", "profile");
+                        const res = await api.post("/admin/upload", formData, { headers: { "Content-Type": "multipart/form-data" } });
+                        return { ...u, profile_pic: res.url };
+                      }
+                      return u;
+                    })
+                  );
+
+                  // Clean up for API
+                  const payload = usersWithPics.map(({ profile_pic_file, profile_pic_preview, ...rest }) => rest);
+
+                  const res = await api.post("/admin/bulk-upload-users", { users: payload });
+                  toast.success(res.message || "Users created successfully");
+                  setIsBulkAdding(false);
+                  setBulkUsers([{ name: "", email: "", phone: "", gender: "male", password: "", dob: "", religion: "", community: "", state: "", city: "", mother_tongue: "", profile_pic: "", profile_pic_file: null }]);
+                  queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+                } catch (err: any) {
+                  toast.error(err.message || "Failed to create users");
+                } finally {
+                  setIsBulkSubmitting(false);
+                }
+              }}
+            >
+              {isBulkSubmitting ? (
+                <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Creating...</>
+              ) : (
+                `Create ${bulkUsers.filter((u) => u.name && u.email && u.phone).length} User(s)`
+              )}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
     </AdminLayout>
   );
 }

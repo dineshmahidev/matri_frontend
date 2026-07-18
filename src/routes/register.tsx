@@ -3,13 +3,13 @@ import { Navbar } from "@/components/layout/Navbar";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/language";
-import { useReligions, useCastes } from "@/lib/useReferenceData";
+import { useReligions, useCastes, useStates, useCities } from "@/lib/useReferenceData";
 import { MOTHER_TONGUES, OPTION_TRANSLATIONS } from "@/data/castes";
-import { RASIS, NAKSHATRAMS, RASI_NAKSHATRAM_MAP } from "@/data/astrology";
-import { Sparkles, ShieldCheck, Heart, Star, BadgeCheck, Eye, EyeOff, User, Users, Calendar, Phone, Mail, Church, Languages, Moon, Lock } from "lucide-react";
+import { Sparkles, ShieldCheck, Heart, Star, BadgeCheck, Eye, EyeOff, User, Users, Calendar, Phone, Mail, Church, Languages, Lock, MapPin, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/register")({
   head: () => ({ meta: [{ title: "Register — Ungalkalyanam" }] }),
@@ -33,17 +33,45 @@ function Register() {
   const { data: castes = [] } = useCastes(religionId);
   const [caste, setCaste] = useState("");
   const [motherTongue, setMotherTongue] = useState("Tamil");
-  const [rasi, setRasi] = useState("");
-  const [nakshatram, setNakshatram] = useState("");
-const [password, setPassword] = useState("");
-const [confirmPassword, setConfirmPassword] = useState("");
-const [showPassword, setShowPassword] = useState(false);
-const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-const [submitting, setSubmitting] = useState(false);
+
+  // State & City database reference bindings
+  const { data: states = [] } = useStates();
+  const [selectedState, setSelectedState] = useState("Tamil Nadu");
+  const stateId = states.find((s) => s.name === selectedState)?.id ?? null;
+  const { data: cities = [] } = useCities(stateId);
+  const [selectedCity, setSelectedCity] = useState("");
+
+  const [smokingStatus, setSmokingStatus] = useState("no");
+  const [drinkingStatus, setDrinkingStatus] = useState("no");
+  const [disability, setDisability] = useState("no");
+
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "taken" | "available">("idle");
+  const emailTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (!email || !email.includes("@")) { setEmailStatus("idle"); return; }
+    setEmailStatus("checking");
+    clearTimeout(emailTimer.current);
+    emailTimer.current = setTimeout(async () => {
+      try {
+        const res = await api.get<{ available: boolean }>(`/auth/check-email?email=${encodeURIComponent(email)}`);
+        setEmailStatus(res.available ? "available" : "taken");
+      } catch {
+        setEmailStatus("idle");
+      }
+    }, 500);
+    return () => clearTimeout(emailTimer.current);
+  }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password || !confirmPassword || !dob || !phone || !caste) {
+    if (!name || !email || !password || !confirmPassword || !dob || !phone || !caste || !selectedState || !selectedCity) {
       toast.error(language === "ta" ? "தயவுசெய்து அனைத்து கட்டாய புலங்களையும் நிரப்பவும்." : "Please fill in all required fields.");
       return;
     }
@@ -66,15 +94,19 @@ const [submitting, setSubmitting] = useState(false);
         community: caste,
         mother_tongue: motherTongue,
         profile_for: profileFor,
-        rasi,
-        nakshatram,
+        state: selectedState,
+        city: selectedCity,
+        smoking_status: smokingStatus,
+        drinking_status: drinkingStatus,
+        disability,
       });
 
       toast.success(language === "ta" ? "சுயவிவரம் வெற்றிகரமாக உருவாக்கப்பட்டது!" : "Profile created successfully!", {
         description: language === "ta" ? "உங்கள் சுயவிவரத்தை முழுமைப்படுத்த தொடரவும்." : "Please complete your profile to get started.",
         duration: 5000,
       });
-      navigate({ to: "/" });
+      sessionStorage.removeItem("ungalkalyanam_profile_popup_dismissed");
+      navigate({ to: "/dashboard" });
     } catch (err: any) {
       toast.error(err.message || (language === "ta" ? "பதிவு செய்ய முடியவில்லை. மீண்டும் முயற்சிக்கவும்." : "Registration failed. Please try again."));
     } finally {
@@ -180,7 +212,14 @@ const [submitting, setSubmitting] = useState(false);
               <input className="field" placeholder="+91" value={phone} onChange={(e) => setPhone(e.target.value)} required />
             </Field>
             <Field label={t("email")} required icon={Mail}>
-              <input className="field" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <div className="relative">
+                <input className="field pr-8" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                {emailStatus === "checking" && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+                {emailStatus === "available" && <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-emerald-500 text-xs font-medium">✓</span>}
+              </div>
+              {emailStatus === "taken" && (
+                <p className="mt-1 text-[11px] text-rose-500">{language === "ta" ? "இந்த மின்னஞ்சல் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது" : "This email is already registered"}</p>
+              )}
             </Field>
             <Field label={t("religion")} icon={Church}>
               <select className="field" value={religion} onChange={(e) => setReligion(e.target.value)}>
@@ -200,23 +239,33 @@ const [submitting, setSubmitting] = useState(false);
                 {MOTHER_TONGUES.map((l) => <option key={l} value={l}>{language === "ta" ? (OPTION_TRANSLATIONS[l] || l) : l}</option>)}
               </select>
             </Field>
-            <Field label={language === "ta" ? "ராசி" : "Rasi / Moon Sign"} icon={Moon}>
-              <select className="field" value={rasi} onChange={(e) => { setRasi(e.target.value); setNakshatram(""); }}>
-                <option value="">{language === "ta" ? "ராசியைத் தேர்ந்தெடுக்கவும்" : "Select Rasi"}</option>
-                {RASIS.map((r) => <option key={r.en} value={r.en}>{language === "ta" ? r.ta : r.en}</option>)}
+            <Field label={language === "ta" ? "மாநிலம்" : "State"} required icon={MapPin}>
+              <select className="field" value={selectedState} onChange={(e) => { setSelectedState(e.target.value); setSelectedCity(""); }} required>
+                {states.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
               </select>
             </Field>
-            <Field label={language === "ta" ? "நட்சத்திரம்" : "Nakshatram / Birth Star"} icon={Star}>
-              <select className="field" value={nakshatram} onChange={(e) => setNakshatram(e.target.value)}>
-                <option value="">{language === "ta" ? "நட்சத்திரத்தைத் தேர்ந்தெடுக்கவும்" : "Select Nakshatram"}</option>
-                {(rasi ? (RASI_NAKSHATRAM_MAP[rasi] || []) : NAKSHATRAMS.map(n => n.en)).map((nName) => {
-                  const nObj = NAKSHATRAMS.find(n => n.en === nName);
-                  return nObj ? (
-                    <option key={nObj.en} value={nObj.en}>
-                      {language === "ta" ? nObj.ta : nObj.en}
-                    </option>
-                  ) : null;
-                })}
+            <Field label={language === "ta" ? "மாவட்டம் / நகரம்" : "District / City"} required icon={MapPin}>
+              <select className="field" value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} required>
+                <option value="">{language === "ta" ? "நகரத்தைத் தேர்ந்தெடுக்கவும்" : "Select City"}</option>
+                {cities.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+              </select>
+            </Field>
+            <Field label={language === "ta" ? "புகைப்பிடிப்பவர்" : "Smoker"}>
+              <select className="field" value={smokingStatus} onChange={(e) => setSmokingStatus(e.target.value)}>
+                <option value="no">{language === "ta" ? "இல்லை" : "No"}</option>
+                <option value="yes">{language === "ta" ? "ஆம்" : "Yes"}</option>
+              </select>
+            </Field>
+            <Field label={language === "ta" ? "மது அருந்துபவர்" : "Drinker"}>
+              <select className="field" value={drinkingStatus} onChange={(e) => setDrinkingStatus(e.target.value)}>
+                <option value="no">{language === "ta" ? "இல்லை" : "No"}</option>
+                <option value="yes">{language === "ta" ? "ஆம்" : "Yes"}</option>
+              </select>
+            </Field>
+            <Field label={language === "ta" ? "ஊனமுற்றவர்" : "Disability"}>
+              <select className="field" value={disability} onChange={(e) => setDisability(e.target.value)}>
+                <option value="no">{language === "ta" ? "இல்லை" : "No"}</option>
+                <option value="yes">{language === "ta" ? "ஆம்" : "Yes"}</option>
               </select>
             </Field>
             <Field label={t("password")} required className="sm:col-span-2" icon={Lock}>

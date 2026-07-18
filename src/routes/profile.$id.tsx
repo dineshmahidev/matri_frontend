@@ -4,20 +4,20 @@ import { Footer } from "@/components/layout/Footer";
 import { DashboardLayout } from "@/components/layout/AppLayouts";
 import { Button } from "@/components/ui/button";
 import {
-  BadgeCheck, Crown, Heart, Lock, MapPin, MessageCircle,
-  Phone, Bookmark, GraduationCap, Briefcase, Users, Sparkles,
+  BadgeCheck, Crown, Heart, Lock, MapPin, MessageCircle, Clock,
+  Phone, Bookmark, GraduationCap, Briefcase, Users,
   Loader2, ChevronLeft, Calendar, Ruler, Church,
-  X, ChevronRight, Maximize2
+  X, ChevronRight, Maximize2, Ban
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
-import { api } from "@/lib/api";
+import { api, getImageUrl } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/language";
 import { TranslateText } from "@/components/matrimony/TranslateText";
 import { useUpgrade } from "@/lib/upgrade";
-import aiMatchGif from "../../08cc5034-117d-11ee-a9eb-e331f0b7b4e4.gif";
+
 
 export const Route = createFileRoute("/profile/$id")({
   head: ({ params }) => ({ meta: [{ title: `Profile ${params.id} — Ungalkalyanam` }] }),
@@ -48,7 +48,7 @@ const fadeUp = {
 function Profile() {
   const { id } = Route.useParams();
   const queryClient = useQueryClient();
-  const { openUpgrade, openPremiumPrompt } = useUpgrade();
+  const { openUpgrade } = useUpgrade();
   const loaderData = Route.useLoaderData();
   const { language } = useLanguage();
   const navigate = useNavigate();
@@ -62,23 +62,32 @@ function Profile() {
   const m = memberData?.data || loaderData;
   const unlocked = m.isUnlocked || false;
 
+  const token = typeof window !== "undefined" ? localStorage.getItem("ungalkalyanam_token") : null;
+
   const [tab, setTab] = useState<"about" | "family" | "career" | "preferences">("about");
   const [interestSent, setInterestSent] = useState(m.interestSent || false);
   const [saved, setSaved] = useState(m.isSaved || false);
+  const [isBlocked, setIsBlocked] = useState(m.isBlockedByMe || false);
+  const [hasBlockedMe, setHasBlockedMe] = useState(m.hasBlockedMe || false);
   const [activePhoto, setActivePhoto] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   useEffect(() => { setInterestSent(m.interestSent || false); }, [m.interestSent]);
   useEffect(() => { setSaved(m.isSaved || false); }, [m.isSaved]);
+  useEffect(() => { setIsBlocked(m.isBlockedByMe || false); }, [m.isBlockedByMe]);
+  useEffect(() => { setHasBlockedMe(m.hasBlockedMe || false); }, [m.hasBlockedMe]);
 
-  // Modals state
-  const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
-  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
-  const [isUnlocking, setIsUnlocking] = useState(false);
-  const [matchResult, setMatchResultData] = useState<any>(null);
-  const [loadingMatch, setLoadingMatch] = useState(false);
+  // Contact request state
+  const [isRequesting, setIsRequesting] = useState(false);
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("ungalkalyanam_token") : null;
+  const { data: contactReq } = useQuery<any>({
+    queryKey: ["contact-request-check", id],
+    queryFn: () => api.get(`/contact-requests/check/${m.userId || m.id}`),
+    enabled: !!token && !unlocked,
+  });
+
+  const contactStatus = contactReq?.status || null; // pending | accepted | rejected
+  const canViewContact = unlocked || contactReq?.can_view;
 
   const { data: myProfileRes } = useQuery<any>({
     queryKey: ["my-profile"],
@@ -87,80 +96,25 @@ function Profile() {
   });
   const myProfile = myProfileRes?.data;
   const myIsPremium = myProfile?.premium ?? false;
+  const isOwnProfile = myProfile?.userId === m.userId;
 
-  const { data: settingsData } = useQuery<any>({
-    queryKey: ["site-settings"],
-    queryFn: () => api.get<any>("/settings"),
-    staleTime: 60000,
-  });
-  const unlockCost = parseInt(settingsData?.credit_cost_unlock || "5", 10);
-  const interestCost = parseInt(settingsData?.credit_cost_interest || "1", 10);
-  const hasMyRasi = myProfile?.rasi && myProfile?.nakshatram;
-  const hasTargetRasi = m.rasi && m.nakshatram;
-
-  const { refetch: _ignored } = useQuery<any>({
-    queryKey: ["porutham-match", id],
-    queryFn: () => api.get<any>(`/members/${id}/match`),
-    enabled: false,
-  });
-
-  const handleCheckMatch = useCallback(async () => {
-    if (!hasMyRasi) {
-      openPremiumPrompt(
-        "Add Your Horoscope",
-        language === "ta" ? "AI பொருத்தம் பார்க்க உங்கள் ராசி மற்றும் நட்சத்திரத்தை சேர்க்கவும்." : "Add your Rasi & Nakshatram details in your profile to use AI Porutham matching."
-      );
-      return;
-    }
-    if (!hasTargetRasi) {
-      toast.error(language === "ta" ? "இந்த உறுப்பினர் ராசி/நட்சத்திர விவரங்களை சேர்க்கவில்லை." : "This member hasn't added their horoscope details.");
-      return;
-    }
-    setIsMatchModalOpen(true);
-    setLoadingMatch(true);
+  const handleSendContactRequest = async () => {
+    setIsRequesting(true);
     try {
-      const res = await api.get(`/members/${id}/match`);
-      const data = res?.data ?? res;
-      if (data) {
-        setMatchResultData(data);
-      }
-      setLoadingMatch(false);
-    } catch (err: any) {
-      setLoadingMatch(false);
-      setIsMatchModalOpen(false);
-      const msg = (err?.message || err?.error || "").toLowerCase();
-      if (msg.includes("premium") || msg.includes("upgrade")) {
-        openPremiumPrompt("AI Porutham Matching", "AI Porutham matching is a premium feature. Upgrade your plan to unlock horoscope compatibility insights.");
-      } else {
-        toast.error(err.message || "Failed to check match compatibility.");
-      }
-    }
-  }, [hasMyRasi, hasTargetRasi, language, openPremiumPrompt, id]);
-
-  const handleUnlockProfile = async () => {
-    setIsUnlocking(true);
-    try {
-      const res = await api.post<any>(`/members/${m.id}/unlock`);
-      toast.success(res.message || "Contact details unlocked! 🔓");
-      queryClient.invalidateQueries({ queryKey: ["member-profile", id] });
+      const res = await api.post<any>("/contact-requests", { target_id: m.userId || m.id });
+      toast.success(res.message || "Contact request sent!");
+      queryClient.invalidateQueries({ queryKey: ["contact-request-check", id] });
       queryClient.invalidateQueries({ queryKey: ["my-profile"] });
-      setIsUnlockModalOpen(false);
     } catch (err: any) {
       const msg = err.message || "";
-      if (msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("upgrade") || msg.toLowerCase().includes("premium") || msg.toLowerCase().includes("credit") || msg.toLowerCase().includes("insufficient")) {
-        openPremiumPrompt("Unlock Contact Details", myIsPremium ? "You've run out of credits. Top up your plan to continue viewing contact details." : "You've run out of contact view credits. Upgrade to unlock unlimited contact views and message all members freely.", myIsPremium);
+      if (msg.toLowerCase().includes("contact view") || msg.toLowerCase().includes("insufficient") || msg.toLowerCase().includes("upgrade")) {
+        openUpgrade();
       } else {
-        toast.error(msg || "Failed to unlock profile.");
+        toast.error(msg);
       }
     } finally {
-      setIsUnlocking(false);
+      setIsRequesting(false);
     }
-  };
-
-  const getStatusColor = (score: number) => {
-    if (score === 1) return "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400";
-    if (score === 0.5) return "border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400";
-    return "border-rose-500/30 bg-rose-500/5 text-rose-600 dark:text-rose-400";
   };
 
   const { data: similarData, isLoading: loadingSimilar } = useQuery({
@@ -170,8 +124,9 @@ function Profile() {
 
   const similarProfiles = (similarData?.data || []).filter((s) => s.id !== m.id).slice(0, 4);
 
-  const photos = [m.photo, ...(m.gallery || [])].filter(Boolean).slice(0, 5);
-  const mainPhoto = photos[activePhoto] || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=800&auto=format&fit=crop";
+  const photos = [m.photo, ...(m.gallery || [])].filter(Boolean).slice(0, 5).map(p => getImageUrl(p));
+  const defaultFallback = m.gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png";
+  const mainPhoto = photos[activePhoto] || defaultFallback;
 
   useEffect(() => {
     if (!isLightboxOpen) return;
@@ -202,11 +157,11 @@ function Profile() {
       }
       const msg = (err?.message || err?.error || "").toLowerCase();
       if (msg.includes("premium") || msg.includes("upgrade")) {
-        openPremiumPrompt("Send Interest", "Sending interest is a premium feature. Upgrade your plan to connect with members.");
+        openUpgrade();
         return;
       }
       if (msg.includes("insufficient") || msg.includes("credits")) {
-        openPremiumPrompt("Insufficient Credits", myIsPremium ? "You've used all your interest credits. Top up your plan to continue sending interests." : "You need credits to send interest. Each interest costs 1 credit. Upgrade to get started.", myIsPremium);
+        openUpgrade();
         return;
       }
       toast.error(err.message || "Failed to send interest. Please log in first.");
@@ -228,6 +183,25 @@ function Profile() {
       queryClient.invalidateQueries({ queryKey: ["member-profile", id] });
     } catch (err: any) {
       toast.error(err.message || "Failed to update saved list.");
+    }
+  };
+
+  const handleToggleBlock = async () => {
+    try {
+      if (isBlocked) {
+        await api.delete(`/blocks/${m.userId || m.id}`);
+        setIsBlocked(false);
+        toast.success("User unblocked");
+      } else {
+        await api.post("/blocks", { blocked_id: m.userId || m.id });
+        setIsBlocked(true);
+        toast.success("User blocked");
+      }
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["member-profile", id] });
+      queryClient.invalidateQueries({ queryKey: ["blocked-users"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update block status.");
     }
   };
 
@@ -270,6 +244,10 @@ function Profile() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
               className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.src = m.gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png";
+              }}
             />
           </AnimatePresence>
 
@@ -308,42 +286,44 @@ function Profile() {
           </div>
 
           {/* Floating Action Buttons overlayed at the bottom inside big container */}
-          <div
-            className="absolute bottom-4 left-4 right-4 z-10 flex items-center gap-2 rounded-2xl bg-black/40 border border-white/10 p-2 shadow-elevated backdrop-blur-md max-w-lg mx-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
-              onClick={handleSendInterest}
-              disabled={interestSent}
-              className={`flex-1 gap-2 rounded-xl font-semibold transition-all ${
-                interestSent
-                  ? "bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25"
-                  : "gradient-rose text-white hover:opacity-95 shadow-glow"
-              }`}
+          {!isBlocked && !hasBlockedMe && (
+            <div
+              className="absolute bottom-4 left-4 right-4 z-10 flex items-center gap-2 rounded-2xl bg-black/40 border border-white/10 p-2 shadow-elevated backdrop-blur-md max-w-lg mx-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <Heart className={`h-4 w-4 ${interestSent ? "fill-rose-400 text-rose-400" : ""}`} />
-              <span className="text-xs sm:text-sm">{interestSent ? "Interest Sent" : "Send Interest"}</span>
-            </Button>
+              <Button
+                onClick={handleSendInterest}
+                disabled={interestSent}
+                className={`flex-1 gap-2 rounded-xl font-semibold transition-all ${
+                  interestSent
+                    ? "bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25"
+                    : "gradient-rose text-white hover:opacity-95 shadow-glow"
+                }`}
+              >
+                <Heart className={`h-4 w-4 ${interestSent ? "fill-rose-400 text-rose-400" : ""}`} />
+                <span className="text-xs sm:text-sm">{interestSent ? "Interest Sent" : "Send Interest"}</span>
+              </Button>
 
-            <Button
-              asChild
-              variant="outline"
-              className="flex-1 gap-2 rounded-xl font-semibold border-white/20 bg-white/10 text-white hover:bg-white/20"
-            >
-              <Link to="/dashboard/messages" search={{ userId: m.id.toString(), userName: m.name, userPhoto: m.photo }}>
-                <MessageCircle className="h-4 w-4" /> <span className="text-xs sm:text-sm">Chat</span>
-              </Link>
-            </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="flex-1 gap-2 rounded-xl font-semibold border-white/20 bg-white/10 text-white hover:bg-white/20"
+              >
+                <Link to="/dashboard/messages" search={{ userId: m.id.toString(), userName: m.name, userPhoto: m.photo }}>
+                  <MessageCircle className="h-4 w-4" /> <span className="text-xs sm:text-sm">Chat</span>
+                </Link>
+              </Button>
 
-            <button
-              onClick={handleToggleSave}
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors ${
-                saved ? "border-primary/30 bg-primary/20 text-primary-foreground" : "border-white/20 text-white hover:bg-white/10"
-              }`}
-            >
-              <Bookmark className={`h-4 w-4 ${saved ? "fill-primary text-primary" : ""}`} />
-            </button>
-          </div>
+              <button
+                onClick={handleToggleSave}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors ${
+                  saved ? "border-primary/30 bg-primary/20 text-primary-foreground" : "border-white/20 text-white hover:bg-white/10"
+                }`}
+              >
+                <Bookmark className={`h-4 w-4 ${saved ? "fill-primary text-primary" : ""}`} />
+              </button>
+            </div>
+          )}
         </motion.div>
       </div>
 
@@ -351,7 +331,7 @@ function Profile() {
       {photos.length > 1 && (
         <div className="flex gap-3 mt-4 justify-center px-4 overflow-x-auto py-1">
           {photos.map((p: string, i: number) => {
-            const isLocked = !myIsPremium && i > 0; // lock gallery photos (not main photo) for free users
+            const isLocked = !isOwnProfile && !myIsPremium && i > 0;
             return (
               <div
                 key={i}
@@ -394,20 +374,16 @@ function Profile() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
+              <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl flex items-center gap-2">
                 {m.name}
+                {m.verified && (
+                  <BadgeCheck className="h-6 w-6 fill-rose-500 text-white shrink-0" />
+                )}
               </h1>
-              <span className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${m.online ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600" : "bg-muted border-border text-muted-foreground"}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${m.online ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
-                {m.online ? "Online" : "Offline"}
-              </span>
-              {m.verified && (
-                <BadgeCheck className="h-6 w-6 text-sky-500 fill-sky-500/10" />
-              )}
             </div>
 
             <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold text-primary">
-              <MapPin className="h-4 w-4 shrink-0" /> {m.city}, {m.state}
+              <MapPin className="h-4 w-4 shrink-0" /> {m.city}
             </p>
 
             {/* Quick Stats Grid inside name/city container */}
@@ -478,80 +454,111 @@ function Profile() {
       </motion.div>
 
       {/* ── CONTACT LOCK / UNLOCK ───────────────────────────────────── */}
-      <motion.div
-        variants={fadeUp} initial="hidden" animate="show" custom={3}
-        className="mx-4 sm:mx-6 lg:mx-0"
-      >
-        <AnimatePresence mode="wait">
-          {unlocked ? (
-            <motion.div
-              key="unlocked"
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl border bg-card p-5 shadow-soft"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100">
-                  <Phone className="h-4 w-4 text-emerald-600" />
+      {!isBlocked && !hasBlockedMe && (
+        <motion.div
+          variants={fadeUp} initial="hidden" animate="show" custom={3}
+          className="mx-4 sm:mx-6 lg:mx-0"
+        >
+          <AnimatePresence mode="wait">
+            {canViewContact ? (
+              <motion.div
+                key="unlocked"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl border bg-card p-5 shadow-soft"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100">
+                    <Phone className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <p className="font-semibold">Contact Information</p>
                 </div>
-                <p className="font-semibold">Contact Information</p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="flex items-center gap-3 rounded-xl bg-muted/60 p-3">
-                  <Phone className="h-4 w-4 text-primary shrink-0" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isTamil ? "கைபேசி எண்" : "Phone"}</p>
-                    <p className="text-sm font-semibold">{m.phone || "—"}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/60 p-3">
+                    <Phone className="h-4 w-4 text-primary shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isTamil ? "கைபேசி எண்" : "Phone"}</p>
+                      <p className="text-sm font-semibold">{m.phone || "—"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/60 p-3">
+                    <MessageCircle className="h-4 w-4 text-primary shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isTamil ? "மின்னஞ்சல்" : "Email"}</p>
+                      <p className="text-sm font-semibold">{m.email || "—"}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 rounded-xl bg-muted/60 p-3">
-                  <MessageCircle className="h-4 w-4 text-primary shrink-0" />
+              </motion.div>
+            ) : contactStatus === "pending" ? (
+              <motion.div
+                key="pending"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl border bg-amber-50 dark:bg-amber-950/20 p-5 shadow-soft"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-900/40">
+                    <Clock className="h-5 w-5 text-amber-600" />
+                  </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isTamil ? "மின்னஞ்சல்" : "Email"}</p>
-                    <p className="text-sm font-semibold">{m.email || "—"}</p>
+                    <p className="font-semibold">Request Pending</p>
+                    <p className="text-sm text-muted-foreground">Waiting for {m.name?.split(" ")[0] || "member"} to accept your contact request</p>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="locked"
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className="relative overflow-hidden rounded-2xl gradient-rose p-5 shadow-glow text-white"
-            >
-              {/* Decorative blobs */}
-              <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
-              <div className="pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/10" />
-
-              <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
-                  <Lock className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-display text-lg font-bold">Contact details locked</p>
-                  <p className="text-sm text-white/80 mt-0.5">
-                    {isTamil ? "கிரெடிட்களைப் பயன்படுத்தி காண்க" : "Use credits to unlock"}
-                  </p>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <Button
-                    onClick={() => setIsUnlockModalOpen(true)}
-                    className="flex-1 sm:flex-none bg-white text-primary hover:bg-white/90 font-semibold shadow-soft"
-                  >
-                    {isTamil ? "கிரெடிட்களைப் பயன்படுத்தவும்" : "Use Credits"}
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="flex-1 sm:flex-none border-white/30 bg-white/10 text-white hover:bg-white/20"
-                  >
-                    <button onClick={() => openUpgrade()} className="inline">Upgrade</button>
+              </motion.div>
+            ) : contactStatus === "rejected" ? (
+              <motion.div
+                key="rejected"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl border bg-card p-5 shadow-soft"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-100">
+                      <X className="h-5 w-5 text-rose-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Request Declined</p>
+                      <p className="text-sm text-muted-foreground">{m.name?.split(" ")[0] || "Member"} declined your request</p>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={handleSendContactRequest} disabled={isRequesting}>
+                    {isRequesting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Request Again"}
                   </Button>
                 </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="locked"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="relative overflow-hidden rounded-2xl gradient-rose p-5 shadow-glow text-white"
+              >
+                <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
+                <div className="pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/10" />
+                <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+                    <Lock className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-display text-lg font-bold">Contact details locked</p>
+                    <p className="text-sm text-white/80 mt-0.5">
+                      {isTamil ? "கிரெடிட்களைப் பயன்படுத்தி காண்க" : "Send request to view contact"}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button
+                      onClick={handleSendContactRequest}
+                      disabled={isRequesting}
+                      className="flex-1 sm:flex-none bg-white text-black hover:bg-white/90 font-semibold shadow-soft"
+                    >
+                      {isRequesting ? <Loader2 className="w-4 h-4 animate-spin" /> : isTamil ? "கோரிக்கை அனுப்பு" : "Request Contact"}
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      )}
 
       {/* ── TABBED DETAIL PANEL ─────────────────────────────────────── */}
       <motion.div
@@ -593,15 +600,22 @@ function Profile() {
               <div className="space-y-3">
                 <h3 className="font-display text-xl font-bold">About {m.name?.split(" ")[0]}</h3>
                 <TranslateText text={m.bio || ""} />
+                <div className="grid gap-2.5 sm:grid-cols-2 pt-2">
+                  <InfoRow label={isTamil ? "புகைப்பிடிப்பவர்" : "Smoker"} value={m.smoking_status} />
+                  <InfoRow label={isTamil ? "மது அருந்துபவர்" : "Drinker"} value={m.drinking_status} />
+                  <InfoRow label={isTamil ? "ஊனமுற்றவர்" : "Disability"} value={m.disability} />
+                </div>
               </div>
             )}
 
             {tab === "family" && (
               <div className="grid gap-2.5 sm:grid-cols-2">
                 {m.family && Object.keys(m.family).length > 0
-                  ? Object.entries(m.family).map(([k, v]) => (
-                      <InfoRow key={k} label={k.replace(/([A-Z])/g, " $1")} value={v as string} />
-                    ))
+                  ? Object.entries(m.family)
+                      .filter(([k]) => !['familyType', 'family_type', 'familyValues', 'family_values'].includes(k))
+                      .map(([k, v]) => (
+                        <InfoRow key={k} label={k.replace(/([A-Z])/g, " $1")} value={v as string} />
+                      ))
                   : <p className="text-sm text-muted-foreground col-span-2">No family details added.</p>
                 }
               </div>
@@ -663,11 +677,14 @@ function Profile() {
                     params={{ id: s.id }}
                     className="group block overflow-hidden rounded-xl border bg-muted/30 transition-all hover:-translate-y-1 hover:shadow-elevated"
                   >
-                    <div className="relative aspect-[3/4] overflow-hidden">
+                    <div className="relative aspect-[3/4] overflow-hidden bg-muted">
                       <img
-                        src={s.photo}
+                        src={getImageUrl(s.photo) || (s.gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png")}
                         alt=""
                         className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          e.currentTarget.src = s.gender?.toLowerCase() === "female" ? "/avatar-female.png" : "/avatar-male.png";
+                        }}
                       />
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
                         <p className="truncate text-xs font-semibold text-white">{s.name}, {s.age}</p>
@@ -680,6 +697,14 @@ function Profile() {
             </div>
           )}
         </div>
+      </motion.div>
+
+      {/* ── BLOCK BUTTON ────────────────────────────────────────────── */}
+      <motion.div variants={fadeUp} initial="hidden" animate="show" custom={6} className="mt-8 mb-4 flex justify-center">
+        <Button variant="ghost" size="sm" onClick={handleToggleBlock} className="text-muted-foreground hover:text-rose-500 hover:bg-rose-50/50">
+          <Ban className="h-4 w-4 mr-2" />
+          {isBlocked ? "Unblock User" : "Block User"}
+        </Button>
       </motion.div>
       </div>
 
@@ -726,7 +751,7 @@ function Profile() {
             {photos.length > 1 && (
               <div className="absolute bottom-6 flex gap-2 overflow-x-auto max-w-[80vw] px-4 py-2" onClick={(e) => e.stopPropagation()}>
                 {photos.map((p, idx) => {
-                  const isLocked = !myIsPremium && idx > 0;
+                  const isLocked = !isOwnProfile && !myIsPremium && idx > 0;
                   return (
                     <div
                       key={idx}
@@ -752,260 +777,6 @@ function Profile() {
         )}
       </AnimatePresence>
 
-      {/* ── UNLOCK CONTACT DETAILS MODAL ────────────────────────────── */}
-      <AnimatePresence>
-        {isUnlockModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md bg-card border rounded-3xl p-6 shadow-elevated"
-            >
-              <button 
-                onClick={() => setIsUnlockModalOpen(false)}
-                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              
-              <div className="text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 mb-4 animate-pulse">
-                  <Sparkles className="h-8 w-8 fill-amber-500/20" />
-                </div>
-                
-                <h3 className="font-display text-xl font-bold text-foreground">
-                  {isTamil ? "தொடர்பு விவரங்களை காண்க" : "Unlock Contact Details"}
-                </h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {isTamil 
-                    ? "இந்த வரனின் கைபேசி எண் மற்றும் அரட்டை விவரங்களை பார்க்க கிரெடிட்கள் கழிக்கப்படும்." 
-                    : "Deduct credits to reveal this member's phone number and enable chat."}
-                </p>
-                
-                {/* Balance preview */}
-                <div className="mt-4 space-y-2">
-                  <div className="p-3 rounded-2xl bg-muted border flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {isTamil ? "தற்போதைய கிரெடிட்கள்:" : "Current Credits:"}
-                    </span>
-                    <span className="text-sm font-bold text-primary">
-                      {myProfile?.planCredits || myProfile?.credits || 0}
-                    </span>
-                  </div>
-                  <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-between">
-                    <span className="text-xs text-rose-600 font-medium">
-                      {isTamil ? "கழிக்கப்படும்:" : "Deducted:"}
-                    </span>
-                    <span className="text-sm font-bold text-rose-600">-{unlockCost}</span>
-                  </div>
-                  <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
-                    <span className="text-xs text-emerald-600 font-medium">
-                      {isTamil ? "மீதமிருக்கும்:" : "Remaining:"}
-                    </span>
-                    <span className="text-sm font-bold text-emerald-600">
-                      {Math.max(0, (myProfile?.planCredits || myProfile?.credits || 0) - unlockCost)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex gap-3">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsUnlockModalOpen(false)}
-                    className="flex-1 rounded-xl cursor-pointer"
-                  >
-                    {isTamil ? "ரத்து செய்" : "Cancel"}
-                  </Button>
-                  <Button 
-                    onClick={handleUnlockProfile}
-                    disabled={isUnlocking || ((myProfile?.planCredits || myProfile?.credits || 0) < unlockCost)}
-                    className="flex-1 rounded-xl gradient-gold text-amber-950 font-bold cursor-pointer"
-                  >
-                    {isUnlocking ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-amber-950" />
-                    ) : (
-                      isTamil ? "உறுதிப்படுத்து" : "Confirm"
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ── MATCH PORUTHAM MODAL ────────────────────────────────────── */}
-      <AnimatePresence>
-        {isMatchModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 30 }}
-              className="relative w-full max-w-2xl bg-card border rounded-3xl p-6 shadow-elevated my-8 max-h-[85vh] overflow-y-auto"
-            >
-              <button 
-                onClick={() => setIsMatchModalOpen(false)}
-                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground z-10 bg-background/85 p-1.5 rounded-full border cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-
-              {loadingMatch ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="w-40 h-40 mb-4 mx-auto">
-                    <img src={aiMatchGif} alt="AI Matching" className="w-full h-full object-contain" />
-                  </div>
-                  <h3 className="font-display text-lg font-bold text-foreground">
-                    {isTamil ? "ஜாதக பொருத்தம் கணிக்கப்படுகிறது..." : "Calculating Horoscope Compatibility..."}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    {isTamil ? "நட்சத்திரங்கள் மற்றும் ராசிகள் ஒப்பிடப்படுகின்றன" : "Aligning stars and moon positions"}
-                  </p>
-                </div>
-              ) : matchResult ? (
-                <div>
-                  <div className="text-center mb-6">
-                    <h2 className="font-display text-xl sm:text-2xl font-bold bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent inline-flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-amber-500 animate-pulse" />
-                      {isTamil ? "ஜாதக பொருத்தம்" : "Horoscope Matching"}
-                    </h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {isTamil ? "பத்து பொருத்தங்கள் மற்றும் ஜாதக பொருத்தம் விவரங்கள்" : "Vedic Dasama Porutham compatibility details"}
-                    </p>
-                  </div>
-
-                  {/* Gauge and Verdict */}
-                  <div className="grid gap-4 sm:grid-cols-3 mb-6">
-                    {/* Radial Progress */}
-                    <div className="rounded-2xl border bg-muted/20 p-4 flex flex-col items-center justify-center text-center">
-                      <div className="relative flex items-center justify-center mb-2">
-                        <svg className="w-24 h-24 transform -rotate-90">
-                          <circle cx="48" cy="48" r="38" className="stroke-muted" strokeWidth="6" fill="transparent" />
-                          <circle
-                            cx="48"
-                            cy="48"
-                            r="38"
-                            className="stroke-amber-500"
-                            strokeWidth="6"
-                            fill="transparent"
-                            strokeDasharray={2 * Math.PI * 38}
-                            strokeDashoffset={2 * Math.PI * 38 * (1 - matchResult.compatibility_percentage / 100)}
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <div className="absolute text-center">
-                          <span className="font-display text-xl font-black">{matchResult.compatibility_percentage}%</span>
-                        </div>
-                      </div>
-                      <div className="bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold px-3 py-1 rounded-full text-xs">
-                        {matchResult.matched_count} / {matchResult.max_points} {isTamil ? "பொருத்தம்" : "Matches"}
-                      </div>
-                    </div>
-
-                    {/* Verdict summary */}
-                    <div className="sm:col-span-2 rounded-2xl border bg-muted/20 p-4 flex flex-col justify-between">
-                      <div>
-                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-0.5">
-                          {isTamil ? "பொருத்த முடிவு" : "Astrological Verdict"}
-                        </span>
-                        <h3 className="text-lg font-display font-black text-foreground mb-2 leading-snug">
-                          {isTamil ? matchResult.verdict.ta : matchResult.verdict.en}
-                        </h3>
-                        
-                        <div className="space-y-1 text-xs">
-                          <div className="flex items-center gap-1.5">
-                            {matchResult.rajju_pass ? (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">✓ {isTamil ? "ரஜ்ஜு பொருத்தம் உண்டு" : "Rajju Matched"}</span>
-                            ) : (
-                              <span className="text-rose-600 dark:text-rose-400 font-semibold">⚠ {isTamil ? "ரஜ்ஜு தோஷம் உள்ளது" : "Rajju Dosham Warning"}</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            {matchResult.vedha_pass ? (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">✓ {isTamil ? "வேதை பொருத்தம் உண்டு" : "Vedha Matched"}</span>
-                            ) : (
-                              <span className="text-rose-600 dark:text-rose-400 font-semibold">⚠ {isTamil ? "வேதை தோஷம் உள்ளது" : "Vedha Dosham"}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bride vs Groom Details */}
-                  <div className="grid sm:grid-cols-2 gap-4 mb-6">
-                    {/* Bride details */}
-                    <div className="rounded-2xl border bg-card p-4 text-xs">
-                      <span className="font-bold text-rose-500 block border-b pb-1.5 mb-1.5">
-                        {isTamil ? "மணமகள்:" : "Bride:"} {matchResult.female.name} ({matchResult.female.display_id})
-                      </span>
-                      <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-muted-foreground">
-                        <div>{isTamil ? "ராசி:" : "Rasi:"} <strong className="text-foreground block">{isTamil ? matchResult.female.rasi.ta : matchResult.female.rasi.en}</strong></div>
-                        <div>{isTamil ? "நட்சத்திரம்:" : "Star:"} <strong className="text-foreground block">{isTamil ? matchResult.female.star.ta : matchResult.female.star.en}</strong></div>
-                        <div>{isTamil ? "பிறந்த தேதி:" : "DOB:"} <strong className="text-foreground block">{matchResult.female.dob}</strong></div>
-                        <div>{isTamil ? "பிறந்த நேரம்:" : "TOB:"} <strong className="text-foreground block">{matchResult.female.tob}</strong></div>
-                      </div>
-                    </div>
-
-                    {/* Groom details */}
-                    <div className="rounded-2xl border bg-card p-4 text-xs">
-                      <span className="font-bold text-blue-500 block border-b pb-1.5 mb-1.5">
-                        {isTamil ? "மணமகன்:" : "Groom:"} {matchResult.male.name} ({matchResult.male.display_id})
-                      </span>
-                      <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-muted-foreground">
-                        <div>{isTamil ? "ராசி:" : "Rasi:"} <strong className="text-foreground block">{isTamil ? matchResult.male.rasi.ta : matchResult.male.rasi.en}</strong></div>
-                        <div>{isTamil ? "நட்சத்திரம்:" : "Star:"} <strong className="text-foreground block">{isTamil ? matchResult.male.star.ta : matchResult.male.star.en}</strong></div>
-                        <div>{isTamil ? "பிறந்த தேதி:" : "DOB:"} <strong className="text-foreground block">{matchResult.male.dob}</strong></div>
-                        <div>{isTamil ? "பிறந்த நேரம்:" : "TOB:"} <strong className="text-foreground block">{matchResult.male.tob}</strong></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Breakdown Accordion */}
-                  <div className="space-y-2 max-h-[30vh] overflow-y-auto pr-1">
-                    {Object.keys(matchResult.poruthams).map((key, idx) => {
-                      const por = matchResult.poruthams[key];
-                      return (
-                        <div key={key} className="rounded-xl border bg-muted/10 p-3 text-xs">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="font-bold text-foreground">{idx + 1}. {isTamil ? por.name_ta : por.name_en}</span>
-                            <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${getStatusColor(por.score)}`}>
-                              {isTamil ? por.status_ta : por.status_en}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground font-medium">{isTamil ? por.desc_ta : por.desc_en}</p>
-                          <p className="text-muted-foreground/60 text-[10px] mt-0.5">{isTamil ? por.desc_en : por.desc_ta}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-10">
-                  <p className="text-sm text-rose-500 font-semibold">Failed to load matching data. Please try again.</p>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ── FLOATING MATCH PORUTHAM BUTTON (BOTTOM RIGHT OF SCREEN) ── */}
-      {hasMyRasi && hasTargetRasi && (
-      <motion.button
-        onClick={handleCheckMatch}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        className="fixed bottom-24 right-6 lg:bottom-8 lg:right-8 z-50 flex h-14 w-14 items-center justify-center rounded-full gradient-gold text-amber-950 shadow-glow cursor-pointer transition-all duration-300 border border-amber-500/20"
-        title={isTamil ? "பொருத்தம் பார்க்க" : "Check Match Porutham"}
-      >
-        <img src={aiMatchGif} alt="AI Match" className="h-full w-full object-cover rounded-full" />
-      </motion.button>
-      )}
       </div>
     </div>
   );

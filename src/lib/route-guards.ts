@@ -25,12 +25,23 @@ export function requireAuth(redirectTo?: string) {
   return user;
 }
 
+/** Roles that have access to the admin panel (/uk-control) */
+export const ADMIN_ROLES: UserType['role'][] = ['admin', 'manager'];
+
+/** Compute the correct home dashboard path for a given role */
+export function getDashboardPath(role: UserType['role']): string {
+  if (ADMIN_ROLES.includes(role)) return '/uk-control';
+  if (role === 'staff') return '/staff';
+  return '/dashboard';
+}
+
 export function requireRole(role: "admin" | "staff", pathname?: string) {
   const user = requireAuth(pathname);
   if (!user) return undefined;
 
   if (role === "admin") {
-    if (user.role !== "admin") {
+    // Both admin and manager may access /uk-control
+    if (!ADMIN_ROLES.includes(user.role)) {
       if (user.role === "staff") throw redirect({ to: "/staff" });
       throw redirect({ to: "/dashboard" });
     }
@@ -38,7 +49,7 @@ export function requireRole(role: "admin" | "staff", pathname?: string) {
   }
 
   if (user.role !== "staff") {
-    if (user.role === "admin") throw redirect({ to: "/uk-control" });
+    if (ADMIN_ROLES.includes(user.role)) throw redirect({ to: "/uk-control" });
     throw redirect({ to: "/dashboard" });
   }
   return user;
